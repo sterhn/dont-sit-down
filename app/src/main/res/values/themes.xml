@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose draws everything; this only sets the window before the first frame. Dark-first. -->
+    <style name="Theme.DontSitDown" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/ink</item>
+        <item name="android:statusBarColor">@color/ink</item>
+        <item name="android:navigationBarColor">@color/ink</item>
+    </style>
+
+    <style name="Theme.DontSitDown.Takeover">
+        <item name="android:windowBackground">@color/black</item>
+        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:navigationBarColor">@color/black</item>
+    </style>
+
+    <color name="ink">#FF0E0E0D</color>
+    <color name="black">#FF000000</color>
+    <color name="amber">#FFD4920A</color>
+</resources>

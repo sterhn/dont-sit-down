@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- backrest -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M42,32 L42,56 M66,32 L66,56 M42,32 L66,32"
+        android:strokeWidth="4"
+        android:strokeColor="#D4920A"
+        android:strokeLineCap="square" />
+    <!-- seat and legs -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M38,58 L70,58 M42,58 L42,76 M66,58 L66,76"
+        android:strokeWidth="4"
+        android:strokeColor="#D4920A"
+        android:strokeLineCap="square" />
+    <!-- strike -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M32,80 L76,28"
+        android:strokeWidth="5"
+        android:strokeColor="#EDEAE4"
+        android:strokeLineCap="square" />
+</vector>
