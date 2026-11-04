@@ -256,6 +256,8 @@ private fun Resting(minutes: Float, onAnother: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.Start,
     ) {
+        com.dontsitdown.ui.components.Polaroid(com.dontsitdown.checkin.Face.COZY, "earned it", width = 140.dp, tilt = 3f)
+        Spacer(Modifier.height(28.dp))
         Text("now sit down.", style = MaterialTheme.typography.displayLarge)
         Spacer(Modifier.height(12.dp))
         Text(

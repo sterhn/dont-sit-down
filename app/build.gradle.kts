@@ -43,6 +43,7 @@ android {
                 // Robolectric fetches its android-all jars itself; let CI/sandboxes point it at a mirror.
                 System.getProperty("robolectric.dependency.repo.url")?.let { url -> it.systemProperty("robolectric.dependency.repo.url", url) }
                 System.getProperty("screenshots.dir")?.let { dir -> it.systemProperty("screenshots.dir", dir) }
+                System.getProperty("export.fixture")?.let { f -> it.systemProperty("export.fixture", f) }
             }
         }
     }
