@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">still going</string>
+    <string name="shortcut_checkin">check in</string>
+    <string name="shortcut_chain">start a chain</string>
+    <string name="shortcut_skip">not home today</string>
 </resources>

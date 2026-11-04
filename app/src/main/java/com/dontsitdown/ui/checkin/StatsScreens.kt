@@ -111,7 +111,7 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
     val context = LocalContext.current
     val data by context.app.checkin.state.collectAsStateWithLifecycle()
     val paper = LocalPaper.current
-    val today = remember { TimeUtils.today() }
+    val today = com.dontsitdown.ui.components.rememberToday()
     var range by rememberSaveable { mutableIntStateOf(7) }
     val days = Checkin.window(data, today, range)
     val prev = Checkin.window(data, today, range, range)

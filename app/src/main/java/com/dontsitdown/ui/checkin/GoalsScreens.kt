@@ -78,7 +78,7 @@ import java.time.LocalDate
 @Composable
 fun GoalsScreen(onOpen: (String) -> Unit, onAdd: () -> Unit) {
     val data by LocalContext.current.app.checkin.state.collectAsStateWithLifecycle()
-    val today = remember { TimeUtils.today() }
+    val today = com.dontsitdown.ui.components.rememberToday()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(28.dp))
         Text("goals.", style = MaterialTheme.typography.displayMedium)

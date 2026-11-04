@@ -95,8 +95,9 @@ fun BoxScope.ToastLayer(toaster: Toaster, bottom: Dp) {
         exit = fadeOut() + slideOutVertically { it / 3 },
         modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = bottom + 12.dp, start = 16.dp, end = 16.dp),
     ) {
-        var last by remember { mutableStateOf("") }
-        if (msg != null) last = msg
+        // Keep showing the last message while it fades out.
+        val last = remember { arrayOf("") }
+        if (msg != null) last[0] = msg
         Box(
             Modifier
                 .widthIn(max = 420.dp)
@@ -104,7 +105,7 @@ fun BoxScope.ToastLayer(toaster: Toaster, bottom: Dp) {
                 .background(MaterialTheme.colorScheme.onBackground, MaterialTheme.shapes.large)
                 .padding(horizontal = 18.dp, vertical = 11.dp),
         ) {
-            Text(last, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.background, textAlign = TextAlign.Center)
+            Text(last[0], style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.background, textAlign = TextAlign.Center)
         }
     }
     if (toaster.confetti > 0) Confetti(toaster.confetti)

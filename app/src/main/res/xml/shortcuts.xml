@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the launcher icon. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_checkin"
+        android:shortcutId="checkin"
+        android:shortcutShortLabel="@string/shortcut_checkin">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.dontsitdown.MainActivity"
+            android:targetPackage="com.dontsitdown">
+            <extra android:name="open" android:value="today" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_chain"
+        android:shortcutId="chain"
+        android:shortcutShortLabel="@string/shortcut_chain">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.dontsitdown.MainActivity"
+            android:targetPackage="com.dontsitdown">
+            <extra android:name="open" android:value="chain" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_away"
+        android:shortcutId="skip"
+        android:shortcutShortLabel="@string/shortcut_skip">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.dontsitdown.MainActivity"
+            android:targetPackage="com.dontsitdown">
+            <extra android:name="open" android:value="skip" />
+        </intent>
+    </shortcut>
+</shortcuts>

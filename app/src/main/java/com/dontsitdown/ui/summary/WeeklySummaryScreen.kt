@@ -48,7 +48,7 @@ import com.dontsitdown.util.TimeUtils
 import java.time.DayOfWeek
 
 @Composable
-fun WeeklySummaryScreen(embedded: Boolean = false) {
+fun WeeklySummaryScreen(embedded: Boolean = false, onBack: (() -> Unit)? = null) {
     val app = LocalContext.current.app
     val repo = app.repository
     val settings by app.settings.state.collectAsStateWithLifecycle()
@@ -70,7 +70,7 @@ fun WeeklySummaryScreen(embedded: Boolean = false) {
                 Text("the chores", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                 arrows()
             }
-        } else TopBar("week") { arrows() }
+        } else TopBar("the chores", onBack = onBack) { arrows() }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
             Text(
                 "${TimeUtils.dateLabel(weekStart)} – ${TimeUtils.dateLabel(weekStart.plusDays(6))}" + if (offset == 0) " · this week" else "",

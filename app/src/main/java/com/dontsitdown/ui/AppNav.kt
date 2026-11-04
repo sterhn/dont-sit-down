@@ -105,8 +105,13 @@ fun AppNav(onboarded: Boolean, openTarget: String?, onTargetConsumed: () -> Unit
         if (!onboarded || openTarget == null) return@LaunchedEffect
         when (openTarget) {
             MainActivity.OPEN_CHAIN -> nav.switchTab(Routes.CHAIN)
-            MainActivity.OPEN_SUMMARY -> nav.switchTab(Routes.stats(chores = true))
+            MainActivity.OPEN_SUMMARY -> nav.navigate(Routes.WEEK) { launchSingleTop = true }
             MainActivity.OPEN_TODAY -> nav.switchTab(Routes.TODAY)
+            MainActivity.OPEN_SKIP -> {
+                com.dontsitdown.service.Reminders.skip(app)
+                nav.switchTab(Routes.CHAIN)
+                toaster.show("not home today. noted.")
+            }
         }
         onTargetConsumed()
     }
@@ -170,7 +175,7 @@ fun AppNav(onboarded: Boolean, openTarget: String?, onTargetConsumed: () -> Unit
                         composable(Routes.SINGLE) {
                             SingleTaskScreen(onBack = { nav.popBackStack() }, onStarted = { nav.switchTab(Routes.CHAIN) })
                         }
-                        composable(Routes.WEEK) { WeeklySummaryScreen() }
+                        composable(Routes.WEEK) { WeeklySummaryScreen(onBack = { if (!nav.popBackStack()) nav.switchTab(Routes.TODAY) }) }
                         composable(Routes.GOAL, arguments = listOf(navArgument("id") { type = NavType.StringType })) {
                             GoalDetailScreen(it.arguments?.getString("id")!!, onBack = { nav.popBackStack() })
                         }
@@ -199,9 +204,10 @@ private fun NavHostController.switchTab(route: String) {
 private fun TabBar(current: String?, onSelect: (String) -> Unit) {
     val app = LocalContext.current.app
     val data by app.checkin.state.collectAsStateWithLifecycle()
-    val start = remember { TimeUtils.startOfDay(TimeUtils.today()) }
+    val today = com.dontsitdown.ui.components.rememberToday()
+    val start = TimeUtils.startOfDay(today)
     val chores by remember(start) { app.repository.observeCompletionsBetween(start, start + TimeUtils.DAY) }.collectAsStateWithLifecycle(emptyList())
-    val dots = mapOf(Routes.TODAY to Checkin.dayFilled(data, TimeUtils.today()), Routes.CHAIN to chores.isNotEmpty())
+    val dots = mapOf(Routes.TODAY to Checkin.dayFilled(data, today), Routes.CHAIN to chores.isNotEmpty())
     Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
         Rule()
         Row(Modifier.fillMaxWidth().height(56.dp)) {

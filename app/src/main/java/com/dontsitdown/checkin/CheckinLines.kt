@@ -60,7 +60,7 @@ object CheckinLines {
     /** When the chores and the check-in meet: a line for the evening card. */
     fun choresLine(tasks: Int, minutes: Int, away: Boolean): String = when {
         away && tasks == 0 -> "not home today. the house can wait."
-        tasks == 0 -> "nothing on the chore log today."
+        tasks == 0 -> "nothing on the chore log."
         tasks == 1 -> "one thing done. $minutes min. it counts."
         else -> "$tasks things done in $minutes min. the couch lost today."
     }

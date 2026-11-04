@@ -105,11 +105,11 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
     val haptics = LocalHapticFeedback.current
     val clipboard = LocalClipboardManager.current
 
-    val today = remember { TimeUtils.today() }
-    val hour = remember { now().hour }
+    val today = com.dontsitdown.ui.components.rememberToday()
+    val hour = remember(today) { now().hour }
     // Before 5am it's still last night: open on the evening, pointed at yesterday.
-    var evening by rememberSaveable { mutableStateOf(hour < 5 || hour >= 17) }
-    var eveningOffset by rememberSaveable { mutableIntStateOf(if (hour < 5) -1 else 0) }
+    var evening by rememberSaveable(today) { mutableStateOf(hour < 5 || hour >= 17) }
+    var eveningOffset by rememberSaveable(today) { mutableIntStateOf(if (hour < 5) -1 else 0) }
     val eveningDate = today.plusDays(eveningOffset.toLong())
     val away = settings.isAway(today)
 
@@ -379,7 +379,7 @@ private fun EveningPage(
     // What the chores side saw today.
     Spacer(Modifier.height(16.dp))
     PaperCard(tilt = -0.35f) {
-        CardTitle("moved today", trailing = {
+        CardTitle(if (yesterday) "moved that day" else "moved today", trailing = {
             if (chores.isNotEmpty()) Text("${chores.sumOf { it.minutes.toDouble() }.roundToInt().coerceAtLeast(1)} min", style = Nums.small, color = MaterialTheme.colorScheme.primary)
         })
         Spacer(Modifier.height(6.dp))
