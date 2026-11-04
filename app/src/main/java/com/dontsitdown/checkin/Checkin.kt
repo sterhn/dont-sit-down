@@ -214,6 +214,33 @@ object Checkin {
         Energy.OK -> maxMinutes
     }
 
+    // ---- the sunday review ----
+
+    /**
+     * The check-in half of the weekly review, a few plain lines: how it felt, sleep, the best and
+     * hardest day, adventures. No counts of days, nothing to keep up. Empty when there's nothing.
+     */
+    fun weekReview(data: CheckinData, weekStart: LocalDate, today: LocalDate): List<String> {
+        val days = (0..6).map { weekStart.plusDays(it.toLong()) }.filter { !it.isAfter(today) }
+        val nums = days.map { numbers(data, it) }
+        val moods = nums.mapNotNull { it.mood }
+        val sleeps = nums.mapNotNull { it.sleep }
+        val out = mutableListOf<String>()
+        avg(moods)?.let { out += "how it felt: mostly ${moodWord(it.roundToInt())} (mood ${fmt1(it)})" }
+        avg(sleeps)?.let { out += "sleep: ${fmt1(it)} on average" }
+        val rated = nums.filter { it.mood != null }
+        if (rated.size >= 3) {
+            val best = rated.maxBy { it.mood!! }
+            val worst = rated.minBy { it.mood!! }
+            if (best.mood!! > worst.mood!!) {
+                out += "best day: ${best.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.UK).lowercase()} · hardest: ${worst.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.UK).lowercase()}"
+            }
+        }
+        val logged = data.log.filter { it.date >= key(weekStart) && it.date <= key(weekStart.plusDays(6)) }
+        if (logged.isNotEmpty()) out += "adventures: " + logged.joinToString(", ") { it.text }
+        return out
+    }
+
     // ---- dates as words ----
 
     private val LONG = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.UK)

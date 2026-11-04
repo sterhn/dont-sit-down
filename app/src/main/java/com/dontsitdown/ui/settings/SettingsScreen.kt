@@ -87,6 +87,7 @@ fun SettingsScreen(onTasks: () -> Unit = {}) {
             Spacer(Modifier.height(4.dp))
             NextFire(s)
             LabeledStepper("snooze limit", s.snoozeLimit, 0..5) { v -> update { it.copy(snoozeLimit = v) } }
+            key(resumes) { HomeWifiRows(s) }
 
             key(resumes) { PermissionRows(context) }
             Spacer(Modifier.height(8.dp))
@@ -107,8 +108,8 @@ fun SettingsScreen(onTasks: () -> Unit = {}) {
             ToggleRow("ghost of tomorrow-you", s.ghost, { v -> update { it.copy(ghost = v) } }, "a word from the person who wakes up to this")
             ToggleRow("scroll shame timer", s.scrollShame, { v -> update { it.copy(scrollShame = v) } }, "one honest nudge, 2 hours later. once.")
 
-            SectionLabel("weekly summary")
-            ToggleRow("weekly summary", s.weeklySummary, { v -> update { it.copy(weeklySummary = v) }; WeeklySummaryWorker.schedule(context) })
+            SectionLabel("weekly review")
+            ToggleRow("sunday review", s.weeklySummary, { v -> update { it.copy(weeklySummary = v) }; WeeklySummaryWorker.schedule(context) }, "how the week felt, and what got done. one notification.")
             if (s.weeklySummary) {
                 DayToggles(setOf(s.summaryDay), { days ->
                     val d = (days - s.summaryDay).firstOrNull() ?: s.summaryDay
@@ -380,5 +381,66 @@ private fun BackupSection() {
             dismissButton = { androidx.compose.material3.TextButton(onClick = { pending = null }) { Text("cancel", style = MaterialTheme.typography.labelLarge) } },
             containerColor = com.dontsitdown.ui.theme.LocalPaper.current.card,
         )
+    }
+}
+
+/** "Only when I'm home": the takeover waits for home Wi-Fi. */
+@Composable
+private fun HomeWifiRows(s: SettingsState) {
+    val context = LocalContext.current
+    val app = context.app
+    fun useCurrent() {
+        val ssid = com.dontsitdown.util.HomeWifi.currentSsid(context)
+        when {
+            !com.dontsitdown.util.HomeWifi.onWifi(context) -> Toast.makeText(context, "you're not on wi-fi right now. try again from home.", Toast.LENGTH_LONG).show()
+            ssid == null -> Toast.makeText(context, "couldn't read the network name, so any wi-fi will count as home.", Toast.LENGTH_LONG).show()
+            else -> {
+                app.settings.update { it.copy(homeSsid = ssid) }
+                Toast.makeText(context, "home is \"$ssid\"", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    val askLocation = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { useCurrent() }
+
+    ToggleRow(
+        "only when i'm home",
+        s.homeWifiOnly,
+        { v -> app.settings.update { it.copy(homeWifiOnly = v) } },
+        "waits until your phone's on home wi-fi. up to 4 hours after home time.",
+    )
+    if (!s.homeWifiOnly) return
+    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("home wi-fi", style = MaterialTheme.typography.bodyLarge)
+            Text(s.homeSsid ?: "any wi-fi counts", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        QuietAction("use this one →", color = MaterialTheme.colorScheme.primary, onClick = {
+            val fine = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (fine) useCurrent()
+            else askLocation.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
+        })
+    }
+    if (s.homeSsid != null) {
+        val background = android.os.Build.VERSION.SDK_INT < 29 || androidx.core.content.ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                if (background) "checks the network name at home time" else "to check the name at home time, location needs \"allow all the time\". until then, any wi-fi counts.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            if (!background) QuietAction("fix →", color = MaterialTheme.colorScheme.primary, onClick = {
+                context.startActivity(
+                    android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", context.packageName, null))
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            })
+        }
+        QuietAction("forget it (any wi-fi)", onClick = { app.settings.update { it.copy(homeSsid = null) } })
     }
 }

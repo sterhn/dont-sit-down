@@ -31,6 +31,10 @@ data class SettingsState(
     val awayDays: Set<Long> = emptySet(),
     /** Gentle check-in reminders (minutes after midnight, -1 = off). */
     val morningNudge: Int = -1,
+    /** Only do the takeover once the phone's on home Wi-Fi (waits up to 4 hours). */
+    val homeWifiOnly: Boolean = false,
+    /** The home network's name, if we were allowed to read it. Null = any Wi-Fi counts. */
+    val homeSsid: String? = null,
     val eveningNudge: Int = -1,
 ) {
     fun isAway(date: java.time.LocalDate): Boolean = date.toEpochDay() in awayDays
@@ -90,6 +94,8 @@ class Settings(context: Context) {
             awayDays = prefs.getStringSet("awayDays", null)?.mapNotNull { it.toLongOrNull() }?.toSet() ?: d.awayDays,
             morningNudge = prefs.getInt("morningNudge", d.morningNudge),
             eveningNudge = prefs.getInt("eveningNudge", d.eveningNudge),
+            homeWifiOnly = prefs.getBoolean("homeWifiOnly", d.homeWifiOnly),
+            homeSsid = prefs.getString("homeSsid", null)?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -115,6 +121,8 @@ class Settings(context: Context) {
             .putStringSet("awayDays", s.awayDays.map { it.toString() }.toSet())
             .putInt("morningNudge", s.morningNudge)
             .putInt("eveningNudge", s.eveningNudge)
+            .putBoolean("homeWifiOnly", s.homeWifiOnly)
+            .putString("homeSsid", s.homeSsid ?: "")
             .apply()
     }
 

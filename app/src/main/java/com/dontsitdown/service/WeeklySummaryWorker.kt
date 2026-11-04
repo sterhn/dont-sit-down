@@ -9,6 +9,7 @@ import androidx.work.WorkerParameters
 import com.dontsitdown.MainActivity
 import com.dontsitdown.app
 import com.dontsitdown.chain.SummaryCalculator
+import com.dontsitdown.checkin.Checkin
 import com.dontsitdown.util.NotificationHelper
 import com.dontsitdown.util.TimeUtils
 import java.util.concurrent.TimeUnit
@@ -19,11 +20,13 @@ class WeeklySummaryWorker(context: Context, params: WorkerParameters) : Coroutin
         val app = applicationContext.app
         val settings = app.settings.current
         if (settings.weeklySummary && settings.onboarded) {
-            val summary = SummaryCalculator.week(app.repository, TimeUtils.weekStart(TimeUtils.today()), settings.awayDates)
-            if (!summary.isEmpty) {
+            val start = TimeUtils.weekStart(TimeUtils.today())
+            val summary = SummaryCalculator.week(app.repository, start, settings.awayDates)
+            val text = reviewText(Checkin.weekReview(app.checkin.current, start, TimeUtils.today()), summary)
+            if (text != null) {
                 NotificationHelper.simple(
                     applicationContext, NotificationHelper.CH_SUMMARY, NotificationHelper.ID_SUMMARY,
-                    "your week", summary.toText(), MainActivity.OPEN_SUMMARY,
+                    "your week", text, MainActivity.OPEN_STORY,
                 )
             }
         }
@@ -33,6 +36,16 @@ class WeeklySummaryWorker(context: Context, params: WorkerParameters) : Coroutin
 
     companion object {
         private const val NAME = "weekly-summary"
+
+        /** Both halves in one note: how the week felt first, then what got done. Null if there's nothing to say. */
+        fun reviewText(checkin: List<String>, chores: com.dontsitdown.chain.WeekSummary): String? {
+            if (checkin.isEmpty() && chores.isEmpty) return null
+            return buildString {
+                checkin.forEach { appendLine(it) }
+                if (checkin.isNotEmpty() && !chores.isEmpty) appendLine()
+                if (!chores.isEmpty) append(chores.toText())
+            }.trim()
+        }
 
         fun nextRun(day: Int, hour: Int, now: Long = System.currentTimeMillis(), afterRun: Boolean = false): Long {
             val today = TimeUtils.toDate(now)

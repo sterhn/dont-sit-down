@@ -63,5 +63,6 @@ class MainActivity : ComponentActivity() {
         const val OPEN_SUMMARY = "summary"
         const val OPEN_TODAY = "today"
         const val OPEN_SKIP = "skip"
+        const val OPEN_STORY = "story"
     }
 }

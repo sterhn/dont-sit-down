@@ -36,6 +36,21 @@ today + tomorrow, 3 days or a week. While you're away there's no takeover, no sn
 and the day doesn't count for the couch (it shows as "away" in the weekly summary). Doing a chore anyway
 still counts for you. Settings → *not home* shows it and has **i'm home →** to undo.
 
+## How the halves help each other
+
+- **The chain listens to your check-in.** Sleep, mood or body at 3 or below today: tonight's chain is capped at
+  8 minutes, and it tells you why. A 4: 12 minutes. The spite voice stands down on rough days too.
+- **Close the day.** After "now sit down", **close the day →** opens the evening check-in.
+- **Mood from the notification.** The optional check-in reminders carry a 1–10 row: tap a number and that's the
+  check-in. Open it for the rest.
+- **Widget.** Long-press the home screen → widgets → still going: his face and today's mood, a check-in button,
+  and tonight's chain as the black-and-amber ticket.
+- **Only when I'm home.** Settings → the takeover: the takeover waits until the phone's on home Wi-Fi (up to
+  4 hours after home time). **use this one →** remembers the current network; that needs location permission,
+  and checking it at home time needs location "allow all the time". Without that, any Wi-Fi counts as home.
+- **Sunday review.** One notification: how the week felt (mood, sleep, best and hardest day, adventures), then
+  the chores. Tapping it opens the week story.
+
 ## Moving your check-ins over from the web app
 
 Your history, goals and boundaries come over in one go. In the web app, open **progress**, then either:
@@ -81,7 +96,9 @@ Settings → *the takeover* shows the state of all three and has a **test the ta
 | `checkin/CheckinStore.kt` | one JSON file, written a moment after each change |
 | `ui/checkin/` | today, goals, stats, journal, week story |
 | `ui/components/Paper.kt`, `Doodles.kt`, `Moments.kt` | polaroid, tape, paper cards, the 1–10 scale, goal doodles, toasts, confetti |
-| `service/CheckinReminders.kt` | optional quiet morning / evening check-in reminders |
+| `service/CheckinReminders.kt` | optional morning / evening check-in reminders, with the 1–10 row |
+| `widget/CheckinWidget.kt` | the home-screen widget |
+| `util/HomeWifi.kt`, `service/HomeWifiWorker.kt` | "only when I'm home": wait for home Wi-Fi before the takeover |
 | `chain/ChainGenerator.kt` | picks 2–4 tasks in ≤ N minutes: overdue first, then stalest, some randomness, never two long tasks, learned times over estimates |
 | `chain/ChainSession.kt` | the ready → dread → active ⇄ between → complete state machine, combo counting, saving results |
 | `chain/MessageGenerator.kt` | every line the app says, normal and spite voice, negotiator and ghost copy, no repeats in a row |

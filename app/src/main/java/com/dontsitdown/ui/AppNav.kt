@@ -116,6 +116,10 @@ fun AppNav(onboarded: Boolean, openTarget: String?, onTargetConsumed: () -> Unit
             MainActivity.OPEN_CHAIN -> nav.switchTab(Routes.CHAIN)
             MainActivity.OPEN_SUMMARY -> nav.navigate(Routes.WEEK) { launchSingleTop = true }
             MainActivity.OPEN_TODAY -> nav.switchTab(Routes.TODAY)
+            MainActivity.OPEN_STORY -> {
+                nav.switchTab(Routes.stats())
+                nav.navigate(Routes.STORY) { launchSingleTop = true }
+            }
             MainActivity.OPEN_SKIP -> {
                 com.dontsitdown.service.Reminders.skip(app)
                 nav.switchTab(Routes.CHAIN)

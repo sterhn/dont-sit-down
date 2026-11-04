@@ -14,7 +14,7 @@ object Reminders {
     /** Did something in the last few hours? Then don't nag. */
     private const val RECENTLY_DONE_MS = 3 * TimeUtils.HOUR
 
-    suspend fun fire(context: Context, snoozed: Boolean, test: Boolean) {
+    suspend fun fire(context: Context, snoozed: Boolean, test: Boolean, skipHomeCheck: Boolean = false) {
         val app = context.app
         val settings = app.settings
         val repo = app.repository
@@ -25,6 +25,12 @@ object Reminders {
         }
         // Marked as away (not home): nothing to nag about. Tonight's alarm is already rebooked above.
         if (!test && settings.current.isAway(TimeUtils.today())) return
+
+        // "Only when I'm home": not on home Wi-Fi yet, so wait for it rather than nag you on the bus.
+        if (!test && !skipHomeCheck && settings.current.homeWifiOnly && !com.dontsitdown.util.HomeWifi.atHome(context, settings.current)) {
+            HomeWifiWorker.enqueue(context, since = System.currentTimeMillis())
+            return
+        }
 
         val phase = app.session.state.value?.phase
         if (phase == Phase.DREAD || phase == Phase.ACTIVE || phase == Phase.BETWEEN) return // already moving
@@ -63,6 +69,7 @@ object Reminders {
         NotificationHelper.cancel(context, NotificationHelper.ID_TAKEOVER)
         ReminderScheduler.cancelSnooze(context)
         app.settings.setAway(TimeUtils.today(), days)
+        HomeWifiWorker.cancel(context)
         app.repository.logEvent(ReminderEventType.SKIPPED)
         if (app.session.state.value?.phase == Phase.READY) app.session.clear()
     }
