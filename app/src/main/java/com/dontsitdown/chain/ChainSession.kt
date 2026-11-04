@@ -76,11 +76,13 @@ class ChainSession(
     private val repo: TaskRepository,
     private val settings: Settings,
     private val scope: CoroutineScope,
+    private val spiteNow: () -> Boolean = { settings.current.spite },
+    private val energy: () -> com.dontsitdown.checkin.Energy = { com.dontsitdown.checkin.Energy.OK },
 ) {
     private val _state = MutableStateFlow<SessionState?>(null)
     val state: StateFlow<SessionState?> = _state.asStateFlow()
 
-    private val spite get() = settings.current.spite
+    private val spite get() = spiteNow()
     private fun now() = System.currentTimeMillis()
 
     fun plan(tasks: List<Task>, mode: SessionMode = SessionMode.CHAIN) {
@@ -88,7 +90,10 @@ class ChainSession(
         _state.value = SessionState(
             mode = mode,
             plan = planned,
-            quip = MessageGenerator.readySubline(spite, planned.sumOf { it.estimate.toDouble() }.toFloat()),
+            quip = planned.sumOf { it.estimate.toDouble() }.toFloat().let { m ->
+                if (mode == SessionMode.CHAIN) MessageGenerator.energySubline(energy(), m) ?: MessageGenerator.readySubline(spite, m)
+                else MessageGenerator.readySubline(spite, m)
+            },
         )
     }
 

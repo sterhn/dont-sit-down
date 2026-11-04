@@ -15,6 +15,7 @@ class DailyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         val app = applicationContext.app
         app.repository.refreshDueDates()
         if (app.settings.current.onboarded) ReminderScheduler.scheduleNext(applicationContext, app.settings.current)
+        com.dontsitdown.widget.CheckinWidget.refresh(applicationContext)
         return Result.success()
     }
 

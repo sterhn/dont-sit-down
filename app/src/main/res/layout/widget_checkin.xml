@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget: his face and today's mood, a check-in button, and tonight's chain as a ticket. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/w_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="78dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/widget_polaroid"
+            android:orientation="vertical"
+            android:padding="5dp"
+            android:rotation="-3">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="@drawable/widget_photo">
+
+                <ImageView
+                    android:id="@+id/w_face"
+                    android:layout_width="66dp"
+                    android:layout_height="66dp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/char_coffee" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/w_caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@font/gaegu_bold"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="coffee first"
+                android:textColor="#FF26304A"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/w_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/gaegu_bold"
+                android:text="Good morning"
+                android:textColor="@color/nb_text"
+                android:textSize="22sp" />
+
+            <TextView
+                android:id="@+id/w_line"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nunito_semibold"
+                android:text="Not checked in yet"
+                android:textColor="@color/nb_muted"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/w_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/widget_button"
+                android:fontFamily="@font/nunito_extrabold"
+                android:paddingStart="14dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="6dp"
+                android:text="Check in →"
+                android:textColor="@color/nb_on_ink"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/w_ticket"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/widget_ticket"
+        android:ellipsize="end"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.08"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingTop="7dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="7dp"
+        android:text="DON'T SIT DOWN · TONIGHT"
+        android:textColor="#FFD4920A"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+</LinearLayout>

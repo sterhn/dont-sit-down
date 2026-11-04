@@ -8,7 +8,7 @@ import com.dontsitdown.data.model.Task
 import com.dontsitdown.data.model.TaskCompletion
 import com.dontsitdown.util.TimeUtils
 
-class TaskRepository(db: AppDatabase) {
+class TaskRepository(db: AppDatabase, private val onCompletion: () -> Unit = {}) {
     private val tasks = db.taskDao()
     private val chains = db.chainResultDao()
 
@@ -51,6 +51,7 @@ class TaskRepository(db: AppDatabase) {
             )
         )
         tasks.insertCompletion(TaskCompletion(taskId = taskId, taskName = task.name, date = at, minutes = minutes, chainId = chainId))
+        onCompletion()
     }
 
     /** Daily housekeeping: keep nextDue consistent with frequency (e.g. after a frequency edit). */

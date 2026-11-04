@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dontsitdown.DontSitDownApp
+import com.dontsitdown.app
 import com.dontsitdown.chain.ChainGenerator
 import com.dontsitdown.chain.MessageGenerator
 import com.dontsitdown.chain.Phase
@@ -132,7 +133,7 @@ class ChainViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun refusalLogged(): String? {
         app.repository.logEvent(ReminderEventType.REFUSED)
-        if (!app.settings.current.spite) return null
+        if (!app.spiteToday()) return null
         val score = SummaryCalculator.yearScore(app.repository, app.settings.current.awayDates)
         return MessageGenerator.skipped(true, score.couch, score.you)
     }
@@ -205,7 +206,7 @@ private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewMode
 
         if (s.plan.isEmpty()) {
             Spacer(Modifier.height(12.dp))
-            Text(MessageGenerator.emptyChain(settings.spite), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(MessageGenerator.emptyChain(androidx.compose.ui.platform.LocalContext.current.app.spiteToday()), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(32.dp))
             QuietAction("shuffle anyway", onClick = vm::shuffle)
             QuietAction("just one", onClick = onJustOne)

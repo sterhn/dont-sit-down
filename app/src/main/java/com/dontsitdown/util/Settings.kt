@@ -53,15 +53,18 @@ data class SettingsState(
  * Also holds a little runtime bookkeeping for the reminder (snoozes, pending chain).
  */
 class Settings(context: Context) {
+    private val appContext = context.applicationContext
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private val _state = MutableStateFlow(read())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
     val current: SettingsState get() = _state.value
 
     fun update(change: (SettingsState) -> SettingsState) {
-        val next = change(current)
+        val before = current
+        val next = change(before)
         write(next)
         _state.value = next
+        if (next.awayDays != before.awayDays) runCatching { com.dontsitdown.widget.CheckinWidget.refresh(appContext) }
     }
 
     private fun read(): SettingsState {

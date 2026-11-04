@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The check-in reminder's body: one line, then 1–10. Tap a number, that's the check-in. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="2dp"
+    android:paddingBottom="6dp">
+
+    <TextView
+        android:id="@+id/rate_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:maxLines="2"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/rate_1"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="1"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_2"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="2"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_3"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="3"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_4"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="4"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_5"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="5"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_6"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="6"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_7"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="7"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_8"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="8"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_9"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="9"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/rate_10"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/notif_rate_box"
+            android:gravity="center"
+            android:text="10"
+            android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/rate_ends"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="@string/rate_ends"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Info" />
+</LinearLayout>

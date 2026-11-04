@@ -48,13 +48,65 @@ object CheckinReminders {
         val day = app.checkin.current.day(Checkin.key(TimeUtils.today()))
         val (title, text) = if (which == MORNING) {
             if (Checkin.morningFilled(day.morning)) return
-            "morning check-in" to "how'd you sleep? ten seconds, then go be a person."
+            "morning check-in" to "how are you, honestly? tap a number, or open it for more."
         } else {
             if (Checkin.eveningFilled(day.evening)) return
-            "close the day" to "how was it, honestly? two minutes, then bed."
+            "close the day" to "how was it? tap a number, or open it for the rest."
         }
-        NotificationHelper.simple(context, NotificationHelper.CH_CHECKIN, NotificationHelper.ID_CHECKIN, title, text, MainActivity.OPEN_TODAY)
+        showRatable(context, which, title, text)
     }
+
+    /** The reminder with a 1–10 row. Tapping a number records the mood right there. */
+    fun showRatable(context: Context, which: String, title: String, text: String) {
+        val views = android.widget.RemoteViews(context.packageName, com.dontsitdown.R.layout.notif_rate).apply {
+            setTextViewText(com.dontsitdown.R.id.rate_text, text)
+            for (v in 1..10) setOnClickPendingIntent(BOXES[v - 1], rateIntent(context, which, v))
+        }
+        val n = androidx.core.app.NotificationCompat.Builder(context, NotificationHelper.CH_CHECKIN)
+            .setSmallIcon(com.dontsitdown.R.drawable.ic_shortcut_checkin_small)
+            .setColor(0xFF2B3550.toInt())
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(androidx.core.app.NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(views)
+            .setCustomBigContentView(views)
+            .setContentIntent(NotificationHelper.openAppIntent(context, MainActivity.OPEN_TODAY, NotificationHelper.ID_CHECKIN))
+            .setAutoCancel(true)
+            .build()
+        NotificationHelper.notify(context, NotificationHelper.ID_CHECKIN, n)
+    }
+
+    /** A tap on a number in the reminder. Before 5am the evening one still means last night. */
+    fun rate(context: Context, which: String, value: Int, now: java.time.LocalDateTime = java.time.LocalDateTime.now()) {
+        val store = context.app.checkin
+        val v = value.coerceIn(1, 10)
+        if (which == MORNING) store.setMorning(now.toLocalDate()) { it.copy(mood = v) }
+        else store.setEvening(if (now.hour < 5) now.toLocalDate().minusDays(1) else now.toLocalDate()) { it.copy(mood = v) }
+        store.flush()
+        val n = androidx.core.app.NotificationCompat.Builder(context, NotificationHelper.CH_CHECKIN)
+            .setSmallIcon(com.dontsitdown.R.drawable.ic_shortcut_checkin_small)
+            .setColor(0xFF2B3550.toInt())
+            .setContentTitle("mood $v · ${Checkin.moodWord(v)}")
+            .setContentText(if (which == MORNING) "noted. tap to add sleep and an intention." else "noted. tap to add the rest of the day.")
+            .setContentIntent(NotificationHelper.openAppIntent(context, MainActivity.OPEN_TODAY, NotificationHelper.ID_CHECKIN))
+            .setAutoCancel(true)
+            .setSilent(true)
+            .setTimeoutAfter(8_000)
+            .build()
+        NotificationHelper.notify(context, NotificationHelper.ID_CHECKIN, n)
+    }
+
+    private val BOXES = intArrayOf(
+        com.dontsitdown.R.id.rate_1, com.dontsitdown.R.id.rate_2, com.dontsitdown.R.id.rate_3, com.dontsitdown.R.id.rate_4, com.dontsitdown.R.id.rate_5,
+        com.dontsitdown.R.id.rate_6, com.dontsitdown.R.id.rate_7, com.dontsitdown.R.id.rate_8, com.dontsitdown.R.id.rate_9, com.dontsitdown.R.id.rate_10,
+    )
+
+    private fun rateIntent(context: Context, which: String, value: Int): PendingIntent = PendingIntent.getBroadcast(
+        context, 300 + (if (which == MORNING) 0 else 20) + value,
+        Intent(context, ReminderReceiver::class.java).setAction(ReminderReceiver.ACTION_RATE)
+            .putExtra(ReminderReceiver.EXTRA_WHICH, which).putExtra(ReminderReceiver.EXTRA_VALUE, value),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
 
     private fun intent(context: Context, which: String): PendingIntent = PendingIntent.getBroadcast(
         context, if (which == MORNING) REQ_MORNING else REQ_EVENING,

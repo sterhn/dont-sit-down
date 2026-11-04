@@ -191,6 +191,29 @@ object Checkin {
         .mapNotNull { runCatching { date(it.key) }.getOrNull() }
         .sortedDescending()
 
+    // ---- what the chores half should know ----
+
+    /**
+     * Rough if sleep, mood or body is 3 or below today; low if any is 4; fine otherwise, and when
+     * there's no check-in yet. The evening's numbers win over the morning's once they're in.
+     */
+    fun energy(data: CheckinData, today: LocalDate): Energy {
+        val day = data.days[key(today)] ?: return Energy.OK
+        val vals = listOfNotNull(day.morning?.sleep, day.evening?.mood ?: day.morning?.mood, day.evening?.body ?: day.morning?.body)
+        return when {
+            vals.any { it <= 3 } -> Energy.ROUGH
+            vals.any { it <= 4 } -> Energy.LOW
+            else -> Energy.OK
+        }
+    }
+
+    /** A smaller chain on harder days: 8 minutes when rough, 12 when low, never more than you set. */
+    fun chainCap(energy: Energy, maxMinutes: Int): Int = when (energy) {
+        Energy.ROUGH -> minOf(maxMinutes, 8)
+        Energy.LOW -> minOf(maxMinutes, 12)
+        Energy.OK -> maxMinutes
+    }
+
     // ---- dates as words ----
 
     private val LONG = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.UK)
@@ -278,5 +301,8 @@ object Checkin {
         return lines.joinToString("\n").trim() + "\n"
     }
 }
+
+/** How today's check-in says you're doing, as far as the chores are concerned. */
+enum class Energy { ROUGH, LOW, OK }
 
 enum class Doodle { MAP, RAMEN, BOOK, STAR, HEART, CLOUD, FLOWER, BEAR }

@@ -21,6 +21,7 @@ import java.time.LocalDate
  * a note doesn't hit the disk on every key, and nothing is ever lost to a forgotten "save".
  */
 class CheckinStore(context: Context, private val scope: CoroutineScope) {
+    private val appContext = context.applicationContext
     private val file = AtomicFile(File(context.filesDir, "checkin.json"))
     private val _state = MutableStateFlow(load())
     val state: StateFlow<CheckinData> = _state.asStateFlow()
@@ -57,11 +58,15 @@ class CheckinStore(context: Context, private val scope: CoroutineScope) {
         try {
             out.write(CheckinJson.encode(data).toByteArray())
             file.finishWrite(out)
+            onSaved()
         } catch (e: Exception) {
             file.failWrite(out)
             Log.e("CheckinStore", "couldn't save the check-in", e)
         }
     }
+
+    /** After every save: keep the home-screen widget in step. */
+    private fun onSaved() = runCatching { com.dontsitdown.widget.CheckinWidget.refresh(appContext) }
 
     fun replaceAll(data: CheckinData) {
         _state.value = data

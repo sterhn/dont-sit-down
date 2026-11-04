@@ -62,6 +62,20 @@ object MessageGenerator {
         )
     }
 
+    /** When this morning's check-in was a hard one: say why the chain is small. Null on normal days. */
+    fun energySubline(energy: com.dontsitdown.checkin.Energy, minutes: Float): String? = when (energy) {
+        com.dontsitdown.checkin.Energy.ROUGH -> pick("rough", listOf(
+            "rough day. ${mins(minutes)} minutes, not 20. that's the deal.",
+            "you checked in rough. so: ${mins(minutes)} minutes, then you're off the hook.",
+            "small one tonight. ${mins(minutes)} minutes. still counts.",
+        ))
+        com.dontsitdown.checkin.Energy.LOW -> pick("low", listOf(
+            "low-ish day, so a shorter one. ${mins(minutes)} minutes.",
+            "${mins(minutes)} minutes. trimmed, because you said today was meh.",
+        ))
+        com.dontsitdown.checkin.Energy.OK -> null
+    }
+
     fun takeoverTail(minutes: Float) = "${mins(minutes)} minutes.\nthat's it."
 
     fun starting(spite: Boolean): String = if (spite) pick(

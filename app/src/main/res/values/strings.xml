@@ -4,4 +4,6 @@
     <string name="shortcut_checkin">check in</string>
     <string name="shortcut_chain">start a chain</string>
     <string name="shortcut_skip">not home today</string>
+    <string name="rate_ends">1 drained · 10 radiant · tap to check in</string>
+    <string name="widget_description">his face, today\'s mood, a check-in button, and tonight\'s chain</string>
 </resources>

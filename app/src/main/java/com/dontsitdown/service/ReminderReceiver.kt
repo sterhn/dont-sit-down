@@ -20,6 +20,7 @@ class ReminderReceiver : BroadcastReceiver() {
                     )
                     ACTION_SNOOZE -> Reminders.snooze(context)
                     ACTION_SKIP -> Reminders.skip(context)
+                    ACTION_RATE -> CheckinReminders.rate(context, intent.getStringExtra(EXTRA_WHICH) ?: CheckinReminders.MORNING, intent.getIntExtra(EXTRA_VALUE, 5))
                     ACTION_CHECKIN -> CheckinReminders.fire(context, intent.getStringExtra(EXTRA_WHICH) ?: CheckinReminders.MORNING)
                     // Swiped the notification away. Noted, no guilt trip right now.
                     ACTION_DISMISSED -> Reminders.refused(context, ReminderEventType.DISMISSED)
@@ -36,6 +37,8 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_SNOOZE = "com.dontsitdown.reminder.SNOOZE"
         const val ACTION_CHECKIN = "com.dontsitdown.reminder.CHECKIN"
         const val EXTRA_WHICH = "which"
+        const val ACTION_RATE = "com.dontsitdown.reminder.RATE"
+        const val EXTRA_VALUE = "value"
         const val ACTION_SKIP = "com.dontsitdown.reminder.SKIP"
         const val ACTION_DISMISSED = "com.dontsitdown.reminder.DISMISSED"
         const val ACTION_SHAME = "com.dontsitdown.reminder.SHAME"

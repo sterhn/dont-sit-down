@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="nb_card">#FF192032</color>
+    <color name="nb_ink">#FF6F82A8</color>
+    <color name="nb_on_ink">#FF121724</color>
+    <color name="nb_text">#FFE6EDF8</color>
+    <color name="nb_muted">#FF93A0BB</color>
+    <color name="nb_polaroid">#FFE9EDF4</color>
+    <color name="nb_photo">#FFC9D7EA</color>
+</resources>

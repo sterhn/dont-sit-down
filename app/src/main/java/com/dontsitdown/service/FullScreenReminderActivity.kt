@@ -112,7 +112,7 @@ class FullScreenReminderActivity : ComponentActivity() {
                     onAcceptTask = { startSingle(it) },
                     onFinalRefusal = {
                         Reminders.refused(this@FullScreenReminderActivity, ReminderEventType.REFUSED)
-                        if (settings.spite) SummaryCalculator.yearScore(app.repository, app.settings.current.awayDates).let { MessageGenerator.skipped(true, it.couch, it.you) }
+                        if (app.spiteToday()) SummaryCalculator.yearScore(app.repository, app.settings.current.awayDates).let { MessageGenerator.skipped(true, it.couch, it.you) }
                         else null
                     },
                     onFinished = { finish() },

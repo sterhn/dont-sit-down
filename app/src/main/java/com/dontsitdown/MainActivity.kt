@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         app.checkin.flush()
+        com.dontsitdown.widget.CheckinWidget.refresh(this)
     }
 
     override fun onResume() {
