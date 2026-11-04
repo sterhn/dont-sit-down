@@ -27,12 +27,14 @@ object NotificationHelper {
     const val CH_PROGRESS = "progress"
     const val CH_SUMMARY = "weekly"
     const val CH_NUDGE = "nudge"
+    const val CH_CHECKIN = "checkin"
 
     const val ID_TAKEOVER = 1
     const val ID_TIMER = 2
     const val ID_PROGRESS = 3
     const val ID_SUMMARY = 4
     const val ID_NUDGE = 5
+    const val ID_CHECKIN = 6
 
     private const val AMBER = 0xFFD4920A.toInt()
 
@@ -55,7 +57,10 @@ object NotificationHelper {
         }
         val summary = NotificationChannel(CH_SUMMARY, "weekly summary", NotificationManager.IMPORTANCE_DEFAULT)
         val nudge = NotificationChannel(CH_NUDGE, "one honest nudge", NotificationManager.IMPORTANCE_DEFAULT)
-        nm.createNotificationChannels(listOf(takeover, timer, progress, summary, nudge))
+        val checkin = NotificationChannel(CH_CHECKIN, "check-in reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = "a quiet nudge for the morning or evening check-in"
+        }
+        nm.createNotificationChannels(listOf(takeover, timer, progress, summary, nudge, checkin))
     }
 
     fun canPost(context: Context): Boolean =
@@ -113,6 +118,7 @@ object NotificationHelper {
             .setAutoCancel(true)
             .addAction(0, "start", start)
         if (snoozeAllowed) b.addAction(0, "snooze 10 min", broadcast(context, ReminderReceiver.ACTION_SNOOZE, 13))
+        b.addAction(0, "not home today", broadcast(context, ReminderReceiver.ACTION_SKIP, 14))
         notify(context, ID_TAKEOVER, b.build())
     }
 

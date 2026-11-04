@@ -112,7 +112,7 @@ class FullScreenReminderActivity : ComponentActivity() {
                     onAcceptTask = { startSingle(it) },
                     onFinalRefusal = {
                         Reminders.refused(this@FullScreenReminderActivity, ReminderEventType.REFUSED)
-                        if (settings.spite) SummaryCalculator.yearScore(app.repository).let { MessageGenerator.skipped(true, it.couch, it.you) }
+                        if (settings.spite) SummaryCalculator.yearScore(app.repository, app.settings.current.awayDates).let { MessageGenerator.skipped(true, it.couch, it.you) }
                         else null
                     },
                     onFinished = { finish() },
@@ -156,6 +156,12 @@ class FullScreenReminderActivity : ComponentActivity() {
                         }
                     })
                 }
+                QuietAction("not home today", color = Color.White.copy(alpha = 0.6f), onClick = {
+                    lifecycleScope.launch {
+                        Reminders.skip(this@FullScreenReminderActivity)
+                        finish()
+                    }
+                })
                 QuietAction("not tonight", color = Color.White.copy(alpha = 0.35f), onClick = { refuse() })
             }
         }

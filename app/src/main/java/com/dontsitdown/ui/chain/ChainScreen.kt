@@ -92,6 +92,17 @@ class ChainViewModel(application: Application) : AndroidViewModel(application) {
         generate(shuffle = false)
     }
 
+    /** "not home": no chain, no takeover, no couch point, for [days] days starting today. */
+    fun skip(days: Int) = viewModelScope.launch {
+        Reminders.skip(app, days)
+        restingAfter = null
+    }
+
+    fun comeHome() {
+        app.settings.clearAway(TimeUtils.today())
+        generate(shuffle = false)
+    }
+
     fun sitDown() {
         restingAfter = session.value?.totalActual
         app.session.clear()
@@ -122,7 +133,7 @@ class ChainViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun refusalLogged(): String? {
         app.repository.logEvent(ReminderEventType.REFUSED)
         if (!app.settings.current.spite) return null
-        val score = SummaryCalculator.yearScore(app.repository)
+        val score = SummaryCalculator.yearScore(app.repository, app.settings.current.awayDates)
         return MessageGenerator.skipped(true, score.couch, score.you)
     }
 
@@ -131,10 +142,13 @@ class ChainViewModel(application: Application) : AndroidViewModel(application) {
 }
 
 @Composable
-fun ChainScreen(onJustOne: () -> Unit, vm: ChainViewModel = viewModel()) {
+fun ChainScreen(onJustOne: () -> Unit, onTasks: () -> Unit = {}, vm: ChainViewModel = viewModel()) {
     val state by vm.session.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
+    val away = settings.isAway(TimeUtils.today())
     LaunchedEffect(state == null, vm.restingAfter) { vm.ensurePlan() }
+    var picking by rememberSaveable { mutableStateOf(false) }
+    if (picking) SkipSheet(onPick = { days -> picking = false; vm.skip(days) }, onDismiss = { picking = false })
 
     val key = state?.let { it.phase to it.index } ?: (Phase.READY to -1)
     AnimatedContent(
@@ -145,7 +159,8 @@ fun ChainScreen(onJustOne: () -> Unit, vm: ChainViewModel = viewModel()) {
         val s = state
         when {
             vm.restingAfter != null && s == null -> Resting(vm.restingAfter!!, onAnother = vm::wakeUp)
-            s == null || phase == Phase.READY -> ReadyContent(s, settings.negotiator || settings.ghost, vm, onJustOne)
+            away && (s == null || phase == Phase.READY) -> Away(settings, onHome = vm::comeHome, onJustOne = onJustOne)
+            s == null || phase == Phase.READY -> ReadyContent(s, settings.negotiator || settings.ghost, vm, onJustOne, onTasks, onSkip = { picking = true })
             phase == Phase.DREAD -> DreadScreen(onPick = vm::setDread)
             phase == Phase.ACTIVE -> TimerScreen(s, onDone = vm::done, onBail = vm::abandon)
             phase == Phase.BETWEEN -> BetweenScreen(s, onNext = vm::next, onEnough = vm::finishEarly)
@@ -155,7 +170,7 @@ fun ChainScreen(onJustOne: () -> Unit, vm: ChainViewModel = viewModel()) {
 }
 
 @Composable
-private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewModel, onJustOne: () -> Unit) {
+private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewModel, onJustOne: () -> Unit, onTasks: () -> Unit, onSkip: () -> Unit) {
     var refusing by rememberSaveable { mutableStateOf(false) }
     val settings by vm.settings.collectAsStateWithLifecycle()
 
@@ -180,7 +195,10 @@ private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewMode
     Column(
         Modifier.fillMaxSize().padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
     ) {
-        Spacer(Modifier.height(48.dp))
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+            QuietAction("tasks →", onClick = onTasks)
+        }
+        Spacer(Modifier.height(4.dp))
         Text(MessageGenerator.HEADLINE, style = MaterialTheme.typography.displayLarge)
         if (s == null) return@Column
 
@@ -190,6 +208,7 @@ private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewMode
             Spacer(Modifier.height(32.dp))
             QuietAction("shuffle anyway", onClick = vm::shuffle)
             QuietAction("just one", onClick = onJustOne)
+            QuietAction("not home today", onClick = onSkip)
             return@Column
         }
 
@@ -223,6 +242,9 @@ private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewMode
             QuietAction("just one", onClick = onJustOne)
             if (canRefuse) QuietAction("not now", onClick = { refusing = true })
         }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            QuietAction("not home today", onClick = onSkip, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
+        }
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -243,6 +265,59 @@ private fun Resting(minutes: Float, onAnother: () -> Unit) {
         )
         Spacer(Modifier.height(48.dp))
         QuietAction("actually, another chain", onClick = onAnother)
+    }
+}
+
+/** A day off: the character's away, and so are you. */
+@Composable
+private fun Away(settings: com.dontsitdown.util.SettingsState, onHome: () -> Unit, onJustOne: () -> Unit) {
+    val today = TimeUtils.today()
+    Column(
+        Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Spacer(Modifier.height(24.dp))
+        com.dontsitdown.ui.components.Polaroid(com.dontsitdown.checkin.Face.AWAY, "not home", width = 150.dp, tilt = -4f)
+        Spacer(Modifier.height(28.dp))
+        Text(MessageGenerator.AWAY_HEADLINE, style = MaterialTheme.typography.displayLarge)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            remember { MessageGenerator.awaySubline(settings.awayThrough(today), today) },
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(48.dp))
+        com.dontsitdown.ui.components.OutlineButton("i'm home after all", onClick = onHome, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        QuietAction("do one thing anyway", onClick = onJustOne)
+    }
+}
+
+/** How long you're away: today, or a few days. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun SkipSheet(onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = MaterialTheme.shapes.extraLarge,
+    ) {
+        Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
+            Text("not home?", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                "no takeover, no nagging, and the couch doesn't score. the chores will wait.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(20.dp))
+            BigButton("just today", onClick = { onPick(1) })
+            Spacer(Modifier.height(10.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(2 to "+ tomorrow", 3 to "3 days", 7 to "a week").forEach { (n, label) ->
+                    com.dontsitdown.ui.components.OutlineButton(label, onClick = { onPick(n) }, modifier = Modifier.weight(1f))
+                }
+            }
+        }
     }
 }
 

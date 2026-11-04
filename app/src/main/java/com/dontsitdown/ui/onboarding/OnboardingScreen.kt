@@ -97,9 +97,13 @@ fun OnboardingScreen(onDone: () -> Unit) {
         when (step) {
             0 -> Page {
                 Spacer(Modifier.weight(1f))
-                Text("this app has one job:", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                com.dontsitdown.ui.components.Polaroid(com.dontsitdown.checkin.Face.COFFEE, "hi.", width = 120.dp, develop = true)
+                Spacer(Modifier.height(28.dp))
+                Text("this app has two jobs:", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
                 Text("catch you before you sit down.", style = MaterialTheme.typography.displayLarge)
+                Spacer(Modifier.height(10.dp))
+                Text("and ask how you're actually doing.", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.weight(1f))
                 BigButton("ok", onClick = { step++ })
             }
@@ -196,7 +200,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                 Spacer(Modifier.weight(1f))
                 Text("done.", style = MaterialTheme.typography.displayLarge)
                 Spacer(Modifier.height(8.dp))
-                Text("first chain's ready.", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("first chain's ready. the check-in's on the today tab.", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.weight(1f))
                 BigButton("show me", onClick = { finish() })
             }

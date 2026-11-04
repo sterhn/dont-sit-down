@@ -35,4 +35,16 @@ class SummaryCalculatorTest {
         val refused = fired + ReminderEvent(timestamp = at(1, 20), type = ReminderEventType.REFUSED)
         assertEquals(1, SummaryCalculator.score(emptyList(), refused, monday, monday.plusDays(7), today).couch)
     }
+
+    @Test
+    fun awayDaysGoToNobody() {
+        val today = monday.plusDays(4)
+        val events = listOf(1L, 2L, 3L).map { ReminderEvent(timestamp = at(it, 19), type = ReminderEventType.FIRED) } +
+            ReminderEvent(timestamp = at(2, 19) + 60_000, type = ReminderEventType.SKIPPED)
+        val done = listOf(TaskCompletion(taskId = "t", taskName = "dishes", date = at(3, 19), minutes = 5f, chainId = null))
+        val score = SummaryCalculator.score(done, events, monday, monday.plusDays(7), today, awayDays = setOf(monday.plusDays(2), monday.plusDays(3)))
+        assertEquals(1, score.couch) // tuesday
+        assertEquals(1, score.you) // thursday: away, but did something anyway
+        assertEquals(listOf(monday.plusDays(2)), score.away)
+    }
 }

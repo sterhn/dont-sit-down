@@ -48,21 +48,29 @@ import com.dontsitdown.util.TimeUtils
 import java.time.DayOfWeek
 
 @Composable
-fun WeeklySummaryScreen() {
-    val repo = LocalContext.current.app.repository
+fun WeeklySummaryScreen(embedded: Boolean = false) {
+    val app = LocalContext.current.app
+    val repo = app.repository
+    val settings by app.settings.state.collectAsStateWithLifecycle()
     var offset by rememberSaveable { mutableIntStateOf(0) }
     val weekStart = remember(offset) { TimeUtils.weekStart(TimeUtils.today()).plusWeeks(offset.toLong()) }
     // Re-run whenever this week's log changes.
     val log by remember(weekStart) {
         repo.observeCompletionsBetween(TimeUtils.startOfDay(weekStart), TimeUtils.startOfDay(weekStart.plusDays(7)))
     }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val summary by produceState<WeekSummary?>(null, weekStart, log) { value = SummaryCalculator.week(repo, weekStart) }
+    val summary by produceState<WeekSummary?>(null, weekStart, log, settings.awayDays) { value = SummaryCalculator.week(repo, weekStart, settings.awayDates) }
 
     Column(Modifier.fillMaxSize()) {
-        TopBar("week") {
+        val arrows: @Composable () -> Unit = {
             IconButton(onClick = { offset-- }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "previous week") }
             IconButton(onClick = { offset++ }, enabled = offset < 0) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "next week") }
         }
+        if (embedded) {
+            Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("the chores", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                arrows()
+            }
+        } else TopBar("week") { arrows() }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
             Text(
                 "${TimeUtils.dateLabel(weekStart)} – ${TimeUtils.dateLabel(weekStart.plusDays(6))}" + if (offset == 0) " · this week" else "",
@@ -88,6 +96,13 @@ fun WeeklySummaryScreen() {
                 style = MaterialTheme.typography.titleLarge,
                 color = if (s.score.you >= s.score.couch) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
             )
+            if (s.score.away.isNotEmpty()) {
+                Text(
+                    "away: " + s.score.away.joinToString(", ") { TimeUtils.dayName(it.dayOfWeek) } + " (doesn't count)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (s.score.skipped.isNotEmpty()) {
                 Text(
                     "skipped: " + s.score.skipped.joinToString(", ") { TimeUtils.dayName(it.dayOfWeek) },
@@ -158,6 +173,17 @@ private fun Grid(s: WeekSummary) {
                         } else {
                             Text("·", color = MaterialTheme.colorScheme.outline)
                         }
+                    }
+                }
+            }
+        }
+        if (s.score.away.isNotEmpty()) {
+            Row(Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("away", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(130.dp))
+                (0..6).forEach { i ->
+                    val away = s.weekStart.plusDays(i.toLong()) in s.score.away
+                    Box(Modifier.width(cell), contentAlignment = Alignment.Center) {
+                        Text(if (away) "—" else "", fontFamily = Mono, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

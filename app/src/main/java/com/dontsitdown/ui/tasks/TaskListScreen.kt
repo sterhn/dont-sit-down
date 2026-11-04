@@ -42,7 +42,7 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
-fun TaskListScreen(onOpen: (String) -> Unit, onAdd: () -> Unit) {
+fun TaskListScreen(onOpen: (String) -> Unit, onAdd: () -> Unit, onBack: (() -> Unit)? = null) {
     val repo = LocalContext.current.app.repository
     val scope = rememberCoroutineScope()
     val tasks by repo.observeTasks().collectAsStateWithLifecycle(initialValue = null)
@@ -57,7 +57,7 @@ fun TaskListScreen(onOpen: (String) -> Unit, onAdd: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        TopBar("tasks") {
+        TopBar("tasks", onBack = onBack) {
             IconButton(onClick = onAdd) { Icon(Icons.Filled.Add, contentDescription = "add task") }
         }
         Text(

@@ -3,11 +3,13 @@ package com.dontsitdown
 import android.app.Application
 import android.content.Context
 import com.dontsitdown.chain.ChainGenerator
+import com.dontsitdown.checkin.CheckinStore
 import com.dontsitdown.chain.ChainSession
 import com.dontsitdown.chain.MessageGenerator
 import com.dontsitdown.data.db.AppDatabase
 import com.dontsitdown.data.model.Task
 import com.dontsitdown.data.repository.TaskRepository
+import com.dontsitdown.service.CheckinReminders
 import com.dontsitdown.service.DailyWorker
 import com.dontsitdown.service.WeeklySummaryWorker
 import com.dontsitdown.util.NotificationHelper
@@ -22,6 +24,7 @@ open class DontSitDownApp : Application() {
     val settings by lazy { Settings(this) }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val session by lazy { ChainSession(this, repository, settings, scope) }
+    val checkin by lazy { CheckinStore(this, scope) }
 
     override fun onCreate() {
         super.onCreate()
@@ -29,6 +32,7 @@ open class DontSitDownApp : Application() {
         NotificationHelper.createChannels(this)
         DailyWorker.schedule(this)
         WeeklySummaryWorker.schedule(this)
+        CheckinReminders.scheduleAll(this)
     }
 
     suspend fun generateChain(exclude: Set<String> = emptySet(), shuffle: Boolean = false): List<Task> =

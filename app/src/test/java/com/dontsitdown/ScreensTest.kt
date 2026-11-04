@@ -110,7 +110,7 @@ class ScreensTest {
     @Test
     fun fullChainThroughTheUi() {
         seed()
-        compose.setContent { AppTheme { AppNav(onboarded = true, openTarget = null, onTargetConsumed = {}) } }
+        compose.setContent { AppTheme { AppNav(onboarded = true, openTarget = MainActivity.OPEN_CHAIN, onTargetConsumed = {}) } }
         waitForText("START")
         shot("04-chain-ready")
         val planned = app.session.state.value!!

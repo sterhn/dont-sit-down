@@ -12,6 +12,11 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import com.dontsitdown.util.ThemeMode
 
 private val DarkScheme = darkColorScheme(
@@ -79,22 +84,46 @@ fun isDark(mode: ThemeMode): Boolean = when (mode) {
 
 @Composable
 fun AppTheme(mode: ThemeMode = ThemeMode.DARK, content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (isDark(mode)) DarkScheme else LightScheme,
-        typography = AppTypography,
-        shapes = AppShapes,
-    ) { Ground(content) }
+    val dark = isDark(mode)
+    CompositionLocalProvider(LocalPaper provides if (dark) DarkPaper else LightPaper) {
+        MaterialTheme(
+            colorScheme = if (dark) DarkScheme else LightScheme,
+            typography = AppTypography,
+            shapes = AppShapes,
+        ) { Ground(grid = true, content) }
+    }
 }
 
 /** Background plus default text colour, so bare Text() never falls back to black-on-ink. */
 @Composable
-private fun Ground(content: @Composable () -> Unit) {
+private fun Ground(grid: Boolean = false, content: @Composable () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().then(if (grid) Modifier.graphPaper() else Modifier),
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
         content = content,
     )
+}
+
+/** Graph paper: a fine line every 14dp, a stronger one every 56dp. Drawn behind everything. */
+fun Modifier.graphPaper(): Modifier = composed {
+    val paper = LocalPaper.current
+    drawBehind {
+        val step = 14.dp.toPx()
+        val px = 1f
+        var i = 0
+        var x = 0f
+        while (x < size.width) {
+            drawRect(if (i % 4 == 0) paper.gridBold else paper.gridFine, Offset(x, 0f), Size(px, size.height))
+            x += step; i++
+        }
+        i = 0
+        var y = 0f
+        while (y < size.height) {
+            drawRect(if (i % 4 == 0) paper.gridBold else paper.gridFine, Offset(0f, y), Size(size.width, px))
+            y += step; i++
+        }
+    }
 }
 
 /** The takeover is always stark: black, white, amber. Theme setting doesn't apply. */
@@ -104,5 +133,5 @@ fun TakeoverTheme(content: @Composable () -> Unit) {
         colorScheme = DarkScheme.copy(background = Color.Black, surface = Color.Black, onBackground = Color.White, onSurface = Color.White),
         typography = AppTypography,
         shapes = AppShapes,
-    ) { Ground(content) }
+    ) { CompositionLocalProvider(LocalPaper provides DarkPaper) { Ground(content = content) } }
 }

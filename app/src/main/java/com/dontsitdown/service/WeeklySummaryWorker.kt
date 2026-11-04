@@ -19,7 +19,7 @@ class WeeklySummaryWorker(context: Context, params: WorkerParameters) : Coroutin
         val app = applicationContext.app
         val settings = app.settings.current
         if (settings.weeklySummary && settings.onboarded) {
-            val summary = SummaryCalculator.week(app.repository, TimeUtils.weekStart(TimeUtils.today()))
+            val summary = SummaryCalculator.week(app.repository, TimeUtils.weekStart(TimeUtils.today()), settings.awayDates)
             if (!summary.isEmpty) {
                 NotificationHelper.simple(
                     applicationContext, NotificationHelper.CH_SUMMARY, NotificationHelper.ID_SUMMARY,

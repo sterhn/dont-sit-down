@@ -11,5 +11,6 @@ class BootReceiver : BroadcastReceiver() {
         val settings = context.app.settings.current
         if (settings.onboarded) ReminderScheduler.scheduleNext(context, settings)
         WeeklySummaryWorker.schedule(context)
+        CheckinReminders.scheduleAll(context)
     }
 }

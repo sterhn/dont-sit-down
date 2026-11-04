@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-enum class ReminderEventType { FIRED, SNOOZED, STARTED, DISMISSED, NEGOTIATED, REFUSED }
+enum class ReminderEventType { FIRED, SNOOZED, STARTED, DISMISSED, NEGOTIATED, REFUSED, SKIPPED }
 
 @Entity(tableName = "reminder_events", indices = [Index("timestamp")])
 data class ReminderEvent(

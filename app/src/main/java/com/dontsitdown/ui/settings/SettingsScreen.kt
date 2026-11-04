@@ -21,6 +21,8 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,7 +49,7 @@ import com.dontsitdown.util.ThemeMode
 import com.dontsitdown.util.TimeUtils
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onTasks: () -> Unit = {}) {
     val context = LocalContext.current
     val app = context.app
     val s by app.settings.state.collectAsStateWithLifecycle()
@@ -66,6 +68,17 @@ fun SettingsScreen() {
     Column(Modifier.fillMaxSize()) {
         TopBar("settings")
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
+            Row(Modifier.fillMaxWidth().clickable(onClick = onTasks).padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("your tasks", style = MaterialTheme.typography.bodyLarge)
+                    Text("what the chains are made of", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text("→", style = Nums.medium, color = MaterialTheme.colorScheme.primary)
+            }
+            Rule()
+
+            AwaySection(s)
+
             SectionLabel("the takeover")
             TimeRow("home time", "weekdays", s.homeHour, s.homeMinute) { h, m -> update(true) { it.copy(homeHour = h, homeMinute = m) } }
             TimeRow("home time", "weekends", s.weekendHour, s.weekendMinute) { h, m -> update(true) { it.copy(weekendHour = h, weekendMinute = m) } }
@@ -108,6 +121,8 @@ fun SettingsScreen() {
                 }
             }
 
+            CheckinSection(s)
+
             SectionLabel("theme")
             Segmented(
                 listOf(ThemeMode.SYSTEM to "system", ThemeMode.DARK to "dark", ThemeMode.LIGHT to "light"),
@@ -115,7 +130,7 @@ fun SettingsScreen() {
             )
             Spacer(Modifier.height(40.dp))
             Text(
-                "everything stays on this phone. no accounts, no sync, no analytics.",
+                "still going: the chores and the check-in, in one place.\neverything stays on this phone. no accounts, no sync, no analytics.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -183,4 +198,135 @@ private fun PermissionRows(context: Context) {
         }
     }
     Rule()
+}
+
+@Composable
+private fun AwaySection(s: SettingsState) {
+    val context = LocalContext.current
+    val app = context.app
+    val today = TimeUtils.today()
+    val through = s.awayThrough(today)
+    SectionLabel("not home")
+    if (through != null) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(if (through == today) "away today" else "away through ${TimeUtils.dayName(through.dayOfWeek)}", style = MaterialTheme.typography.bodyLarge)
+                Text("no takeover, and the couch doesn't score", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            QuietAction("i'm home →", onClick = { app.settings.clearAway(today) }, color = MaterialTheme.colorScheme.primary)
+        }
+    } else {
+        Text("going somewhere? skip the takeover while you're out.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(8.dp))
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        Segmented(
+            listOf(1 to "today", 2 to "+ tmrw", 3 to "3 days", 7 to "a week"),
+            0,
+            { n -> scope.launch { com.dontsitdown.service.Reminders.skip(context, n) } },
+            Modifier.fillMaxWidth(),
+        )
+    }
+    val upcoming = s.awayDates.filter { it.isAfter(through ?: today) }.sorted()
+    if (upcoming.isNotEmpty()) {
+        Text(
+            "also away: " + upcoming.take(6).joinToString(", ") { TimeUtils.dateLabel(it) },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+}
+
+@Composable
+private fun CheckinSection(s: SettingsState) {
+    val context = LocalContext.current
+    val app = context.app
+    val store = app.checkin
+    val data by store.state.collectAsStateWithLifecycle()
+    var pendingImport by remember { mutableStateOf<com.dontsitdown.checkin.CheckinData?>(null) }
+
+    val exporter = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        runCatching { context.contentResolver.openOutputStream(uri)!!.use { it.write(store.export().toByteArray()) } }
+            .onSuccess { Toast.makeText(context, "exported", Toast.LENGTH_SHORT).show() }
+            .onFailure { Toast.makeText(context, "couldn't write that file", Toast.LENGTH_SHORT).show() }
+    }
+    val importer = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val parsed = runCatching {
+            context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
+        }.getOrNull()?.let { com.dontsitdown.checkin.CheckinJson.decode(it) }
+        if (parsed == null) Toast.makeText(context, "couldn't read that file", Toast.LENGTH_SHORT).show()
+        else pendingImport = parsed
+    }
+
+    SectionLabel("check-in")
+    NudgeRow("morning reminder", s.morningNudge, 9 * 60) { v ->
+        app.settings.update { it.copy(morningNudge = v) }
+        com.dontsitdown.service.CheckinReminders.schedule(context, com.dontsitdown.service.CheckinReminders.MORNING, v)
+    }
+    NudgeRow("evening reminder", s.eveningNudge, 22 * 60) { v ->
+        app.settings.update { it.copy(eveningNudge = v) }
+        com.dontsitdown.service.CheckinReminders.schedule(context, com.dontsitdown.service.CheckinReminders.EVENING, v)
+    }
+    Text(
+        "quiet, and only if you haven't checked in yet. boundaries are edited on the evening page.",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+    Text(
+        "${data.days.size} days · ${data.goals.size} goals · ${data.log.size} adventures logged",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(10.dp))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        OutlineButton("import", onClick = { importer.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, modifier = Modifier.weight(1f))
+        OutlineButton("export", onClick = { exporter.launch("daily-checkin-${TimeUtils.today()}.json") }, modifier = Modifier.weight(1f))
+    }
+    Text(
+        "moving over from the web app? there: progress → export data. here: import that file.",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+
+    pendingImport?.let { d ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pendingImport = null },
+            title = { Text("import this file?", style = MaterialTheme.typography.titleLarge) },
+            text = {
+                Text(
+                    "${d.days.size} days, ${d.goals.size} goals, ${d.log.size} logged. this replaces the check-ins and goals on this phone (your chores and tasks aren't touched).",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    store.replaceAll(d)
+                    pendingImport = null
+                    Toast.makeText(context, "imported", Toast.LENGTH_SHORT).show()
+                }) { Text("import", style = MaterialTheme.typography.labelLarge) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { pendingImport = null }) { Text("cancel", style = MaterialTheme.typography.labelLarge) } },
+            containerColor = com.dontsitdown.ui.theme.LocalPaper.current.card,
+        )
+    }
+}
+
+@Composable
+private fun NudgeRow(title: String, minuteOfDay: Int, default: Int, onChange: (Int) -> Unit) {
+    val context = LocalContext.current
+    val on = minuteOfDay >= 0
+    ToggleRow(title, on, { v -> onChange(if (v) default else -1) }, if (on) "at ${TimeUtils.hhmm(minuteOfDay / 60, minuteOfDay % 60)} · tap the time to change" else "off")
+    if (on) {
+        Row(Modifier.fillMaxWidth().clickable { pickTime(context, minuteOfDay / 60, minuteOfDay % 60) { h, m -> onChange(h * 60 + m) } }.padding(bottom = 8.dp)) {
+            Text(TimeUtils.hhmm(minuteOfDay / 60, minuteOfDay % 60), style = Nums.large, color = MaterialTheme.colorScheme.primary)
+        }
+    }
 }

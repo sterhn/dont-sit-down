@@ -46,6 +46,11 @@ class MainActivity : ComponentActivity() {
         openTarget = intent.getStringExtra(EXTRA_OPEN)
     }
 
+    override fun onStop() {
+        super.onStop()
+        app.checkin.flush()
+    }
+
     override fun onResume() {
         super.onResume()
         app.settings.lastOpenedAt = System.currentTimeMillis()
@@ -55,5 +60,6 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_OPEN = "open"
         const val OPEN_CHAIN = "chain"
         const val OPEN_SUMMARY = "summary"
+        const val OPEN_TODAY = "today"
     }
 }

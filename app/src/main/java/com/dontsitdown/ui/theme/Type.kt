@@ -30,3 +30,13 @@ object Nums {
     val medium = TextStyle(fontFamily = Mono, fontWeight = FontWeight.Medium, fontSize = 17.sp)
     val small = TextStyle(fontFamily = Mono, fontSize = 13.sp)
 }
+
+/** Gaegu, subset to latin: the character's handwriting. Captions, scale values, little notes. Never body text. */
+val Hand = androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.dontsitdown.R.font.gaegu_bold, FontWeight.Bold))
+
+object HandText {
+    val huge = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 40.sp)
+    val large = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 30.sp)
+    val medium = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 23.sp, lineHeight = 25.sp)
+    val small = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 19.sp, lineHeight = 21.sp)
+}

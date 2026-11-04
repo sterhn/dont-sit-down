@@ -26,7 +26,23 @@ data class SettingsState(
     val summaryHour: Int = 20,
     val dread: Boolean = true,
     val theme: ThemeMode = ThemeMode.DARK,
+    /** Days off (LocalDate.toEpochDay()): not home, no takeover, and the couch doesn't score. */
+    val awayDays: Set<Long> = emptySet(),
+    /** Gentle check-in reminders (minutes after midnight, -1 = off). */
+    val morningNudge: Int = -1,
+    val eveningNudge: Int = -1,
 ) {
+    fun isAway(date: java.time.LocalDate): Boolean = date.toEpochDay() in awayDays
+    val awayDates: Set<java.time.LocalDate> get() = awayDays.map { java.time.LocalDate.ofEpochDay(it) }.toSet()
+
+    /** The last day of the away stretch that covers [from], or null if [from] isn't a day off. */
+    fun awayThrough(from: java.time.LocalDate): java.time.LocalDate? {
+        if (!isAway(from)) return null
+        var d = from
+        while (isAway(d.plusDays(1))) d = d.plusDays(1)
+        return d
+    }
+
     fun homeTimeFor(dayOfWeek: Int): Pair<Int, Int> =
         if (dayOfWeek >= 6) weekendHour to weekendMinute else homeHour to homeMinute
 }
@@ -67,6 +83,9 @@ class Settings(context: Context) {
             summaryHour = prefs.getInt("summaryHour", d.summaryHour),
             dread = prefs.getBoolean("dread", d.dread),
             theme = runCatching { ThemeMode.valueOf(prefs.getString("theme", null) ?: "") }.getOrDefault(d.theme),
+            awayDays = prefs.getStringSet("awayDays", null)?.mapNotNull { it.toLongOrNull() }?.toSet() ?: d.awayDays,
+            morningNudge = prefs.getInt("morningNudge", d.morningNudge),
+            eveningNudge = prefs.getInt("eveningNudge", d.eveningNudge),
         )
     }
 
@@ -89,7 +108,22 @@ class Settings(context: Context) {
             .putInt("summaryHour", s.summaryHour)
             .putBoolean("dread", s.dread)
             .putString("theme", s.theme.name)
+            .putStringSet("awayDays", s.awayDays.map { it.toString() }.toSet())
+            .putInt("morningNudge", s.morningNudge)
+            .putInt("eveningNudge", s.eveningNudge)
             .apply()
+    }
+
+    /** Mark [days] days starting today as away. Keeps a year of history, drops older days. */
+    fun setAway(from: java.time.LocalDate, days: Int) = update { st ->
+        val keepAfter = from.minusDays(366).toEpochDay()
+        st.copy(awayDays = st.awayDays.filter { it >= keepAfter }.toSet() + (0 until days).map { from.plusDays(it.toLong()).toEpochDay() })
+    }
+
+    /** "I'm home after all": clears [from] and the rest of that away stretch. */
+    fun clearAway(from: java.time.LocalDate) = update { st ->
+        val end = st.awayThrough(from) ?: return@update st
+        st.copy(awayDays = st.awayDays.filterNot { it in from.toEpochDay()..end.toEpochDay() }.toSet())
     }
 
     // --- reminder bookkeeping ---

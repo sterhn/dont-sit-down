@@ -1,9 +1,41 @@
-# Don't Sit Down
+# still going
 
-An Android app that catches you at the door before you collapse on the couch:
-"don't sit down. 17 minutes. go."
+One Android app with two jobs:
+
+- **don't sit down**: catches you at the door before you collapse on the couch.
+  "don't sit down. 17 minutes. go."
+- **the daily check-in**: sleep, body and mood in the morning, an intention for the day, and an honest
+  close of the day in the evening, with your hoodie-wearing character watching from a taped-in polaroid.
+  Small weekly and monthly goals, a journal, a week story, streaks.
+
+They share one look (ink and amber, graph paper, the polaroid) and talk to each other: the evening
+check-in shows what chores you got done, the today page points at tonight's chain, and the week story
+includes both.
 
 Kotlin + Jetpack Compose + Room. Everything stays on the phone: no accounts, no sync, no analytics.
+
+## The tabs
+
+| | |
+|---|---|
+| **today** | the check-in. morning / evening, yesterday / today (before 5am it opens on last night). autosaves every tap. a strip at the bottom points at tonight's chain and the next goal |
+| **chain** | don't sit down: the chain, the timer, "just one", "not now", and **not home today**. `tasks →` at the top edits the task list |
+| **goals** | small adventures, weekly or monthly, with their own streaks |
+| **stats** | check-in: streak stamp, last 7 days, averages, chart, boundary hold rates, mood after sleep, journal, week story. chores: the weekly couch-vs-you summary |
+| **settings** | your tasks, days away, the takeover, check-in reminders, import / export, theme |
+
+## Not home today
+
+On the chain screen, the takeover, or the takeover notification: **not home today**. Pick just today,
+today + tomorrow, 3 days or a week. While you're away there's no takeover, no snooze, no scroll-shame nudge,
+and the day doesn't count for the couch (it shows as "away" in the weekly summary). Doing a chore anyway
+still counts for you. Settings → *not home* shows it and has **i'm home →** to undo.
+
+## Moving your check-ins over from the web app
+
+1. In the old web app: **progress → export data (JSON)**.
+2. Here: **settings → check-in → import**, pick that file. It replaces the check-ins and goals on the phone
+   (your chores and tasks aren't touched). **export** writes the same format back, so the web app can read it too.
 
 ## Build & install
 
@@ -15,7 +47,8 @@ or from the command line:
 adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
-The release build is signed with the debug key so it can be sideloaded as-is. It's for one phone, not the Play Store.
+The app id is still `com.dontsitdown`, so it installs straight over Don't Sit Down and keeps your tasks,
+history and settings. The release build is signed with the debug key so it can be sideloaded as-is. It's for one phone, not the Play Store.
 
 On first launch the app asks for:
 - **notifications**, so the reminder can appear at all
@@ -28,6 +61,12 @@ Settings → *the takeover* shows the state of all three and has a **test the ta
 
 | | |
 |---|---|
+| `checkin/Model.kt` | the check-in data, same JSON shape as the web app; a lenient importer ported from it |
+| `checkin/Checkin.kt` | streaks, goal periods and streaks, faces for moods, the story and markdown |
+| `checkin/CheckinStore.kt` | one JSON file, written a moment after each change |
+| `ui/checkin/` | today, goals, stats, journal, week story |
+| `ui/components/Paper.kt`, `Doodles.kt`, `Moments.kt` | polaroid, tape, paper cards, the 1–10 scale, goal doodles, toasts, confetti, the streak stamp |
+| `service/CheckinReminders.kt` | optional quiet morning / evening check-in reminders |
 | `chain/ChainGenerator.kt` | picks 2–4 tasks in ≤ N minutes: overdue first, then stalest, some randomness, never two long tasks, learned times over estimates |
 | `chain/ChainSession.kt` | the ready → dread → active ⇄ between → complete state machine, combo counting, saving results |
 | `chain/MessageGenerator.kt` | every line the app says, normal and spite voice, negotiator and ghost copy, no repeats in a row |
@@ -43,5 +82,10 @@ Settings → *the takeover* shows the state of all three and has a **test the ta
 ./gradlew testDebugUnitTest
 ```
 
-Plain JVM tests cover chain generation and scoring. `ScreensTest` runs the real UI under Robolectric, clicks
-through a whole chain and saves screenshots (`-Dscreenshots.dir=/some/dir` picks where they go).
+Plain JVM tests cover chain generation, scoring (including away days) and the check-in logic and web-app
+import. `ScreensTest` and `CheckinScreensTest` run the real UI under Robolectric, click through a whole chain,
+a check-in and a day away, and save screenshots (`-Dscreenshots.dir=/some/dir` picks where they go).
+
+The character stickers (`res/drawable-nodpi/char_*.webp`) come from the daily-checkin web app. The handwriting
+font is [Gaegu](https://fonts.google.com/specimen/Gaegu), subset to latin, under the SIL Open Font License
+(`licenses/Gaegu-OFL.txt`).

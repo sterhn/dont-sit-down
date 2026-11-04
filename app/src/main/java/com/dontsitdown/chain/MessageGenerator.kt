@@ -110,6 +110,23 @@ object MessageGenerator {
     fun emptyChain(spite: Boolean): String = if (spite) "nothing's due. suspicious, but fine. sit down."
     else "nothing's due. genuinely. sit down."
 
+    // --- away ---
+
+    const val AWAY_HEADLINE = "not home today."
+
+    fun awaySubline(through: java.time.LocalDate?, today: java.time.LocalDate): String {
+        val back = when {
+            through == null || through == today -> pick("away_today", listOf(
+                "the chores will keep. so will the couch.",
+                "no takeover tonight. the dishes can wait for you.",
+                "day off from the house. it'll still be there tomorrow.",
+            ))
+            through == today.plusDays(1) -> "off through tomorrow. no takeover till you're back."
+            else -> "off through ${TimeUtils.dayName(through.dayOfWeek)}. no takeover till you're back."
+        }
+        return back
+    }
+
     fun oneMorePrompt() = pick("one_more", listOf("got one more in you?", "while you're up…", "one more. quick one."))
 
     // --- dread ---

@@ -23,6 +23,9 @@ object Reminders {
             ReminderScheduler.scheduleNext(context, settings.current)
             settings.resetSnoozes()
         }
+        // Marked as away (not home): nothing to nag about. Tonight's alarm is already rebooked above.
+        if (!test && settings.current.isAway(TimeUtils.today())) return
+
         val phase = app.session.state.value?.phase
         if (phase == Phase.DREAD || phase == Phase.ACTIVE || phase == Phase.BETWEEN) return // already moving
 
@@ -54,6 +57,16 @@ object Reminders {
         ReminderScheduler.scheduleSnooze(context)
     }
 
+    /** "not home": skip today (and [days]-1 more). No takeover, no snooze, no nudge, no couch point. */
+    suspend fun skip(context: Context, days: Int = 1) {
+        val app = context.app
+        NotificationHelper.cancel(context, NotificationHelper.ID_TAKEOVER)
+        ReminderScheduler.cancelSnooze(context)
+        app.settings.setAway(TimeUtils.today(), days)
+        app.repository.logEvent(ReminderEventType.SKIPPED)
+        if (app.session.state.value?.phase == Phase.READY) app.session.clear()
+    }
+
     suspend fun refused(context: Context, type: ReminderEventType) {
         NotificationHelper.cancel(context, NotificationHelper.ID_TAKEOVER)
         ReminderScheduler.cancelSnooze(context)
@@ -73,6 +86,7 @@ object Reminders {
         if (!settings.current.scrollShame) return
         val today = TimeUtils.today()
         if (settings.shameNudgedDay == today.toEpochDay()) return
+        if (settings.current.isAway(today)) return
         val fired = settings.lastFiredAt
         if (fired == 0L || TimeUtils.toDate(fired) != today) return
         val last = app.repository.lastCompletionAt()

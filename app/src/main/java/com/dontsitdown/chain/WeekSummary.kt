@@ -13,7 +13,7 @@ import kotlin.math.roundToInt
 
 data class GridRow(val name: String, val minutesByDay: List<Float?>)
 
-data class Score(val couch: Int, val you: Int, val skipped: List<LocalDate>)
+data class Score(val couch: Int, val you: Int, val skipped: List<LocalDate>, val away: List<LocalDate> = emptyList())
 
 data class WeekSummary(
     val weekStart: LocalDate,
@@ -40,6 +40,9 @@ data class WeekSummary(
         } else if (score.you > 0) {
             appendLine("  no skips. the couch: 0, you: ${score.you}")
         }
+        if (score.away.isNotEmpty()) {
+            appendLine("  away: ${score.away.joinToString(", ") { TimeUtils.dayName(it.dayOfWeek) }} (doesn't count)")
+        }
         fastest?.let { (m, d) -> appendLine("  fastest chain: ${TimeUtils.wholeMinutes(m)} min (${TimeUtils.dayName(d.dayOfWeek)})") }
         appendLine()
         avgDread?.let { appendLine("  avg dread: ${String.format(Locale.US, "%.1f", it)} 💀") }
@@ -50,8 +53,18 @@ data class WeekSummary(
 
 object SummaryCalculator {
 
-    /** A day goes to you if anything got done; to the couch if the reminder fired (or was refused) and nothing did. */
-    fun score(completions: List<TaskCompletion>, events: List<ReminderEvent>, from: LocalDate, toExclusive: LocalDate, today: LocalDate): Score {
+    /**
+     * A day goes to you if anything got done; to the couch if the reminder fired (or was refused) and nothing did.
+     * Days you marked as away go to nobody: you can't do the dishes from a train.
+     */
+    fun score(
+        completions: List<TaskCompletion>,
+        events: List<ReminderEvent>,
+        from: LocalDate,
+        toExclusive: LocalDate,
+        today: LocalDate,
+        awayDays: Set<LocalDate> = emptySet(),
+    ): Score {
         val doneDays = completions.map { TimeUtils.toDate(it.date) }.toSet()
         val firedDays = events.filter { it.type == ReminderEventType.FIRED }.map { TimeUtils.toDate(it.timestamp) }.toSet()
         val refusedDays = events.filter { it.type == ReminderEventType.DISMISSED || it.type == ReminderEventType.REFUSED }
@@ -59,10 +72,12 @@ object SummaryCalculator {
         var couch = 0
         var you = 0
         val skipped = mutableListOf<LocalDate>()
+        val away = mutableListOf<LocalDate>()
         var d = from
         while (d.isBefore(toExclusive) && !d.isAfter(today)) {
             when {
                 d in doneDays -> you++
+                d in awayDays -> away += d
                 (d.isBefore(today) && d in firedDays) || d in refusedDays -> {
                     couch++
                     skipped += d
@@ -70,21 +85,21 @@ object SummaryCalculator {
             }
             d = d.plusDays(1)
         }
-        return Score(couch, you, skipped)
+        return Score(couch, you, skipped, away)
     }
 
-    suspend fun scoreBetween(repo: TaskRepository, from: LocalDate, toExclusive: LocalDate): Score {
+    suspend fun scoreBetween(repo: TaskRepository, from: LocalDate, toExclusive: LocalDate, awayDays: Set<LocalDate> = emptySet()): Score {
         val a = TimeUtils.startOfDay(from)
         val b = TimeUtils.startOfDay(toExclusive)
-        return score(repo.completionsBetween(a, b), repo.eventsBetween(a, b), from, toExclusive, TimeUtils.today())
+        return score(repo.completionsBetween(a, b), repo.eventsBetween(a, b), from, toExclusive, TimeUtils.today(), awayDays)
     }
 
-    suspend fun yearScore(repo: TaskRepository): Score {
+    suspend fun yearScore(repo: TaskRepository, awayDays: Set<LocalDate> = emptySet()): Score {
         val today = TimeUtils.today()
-        return scoreBetween(repo, today.withDayOfYear(1), today.plusDays(1))
+        return scoreBetween(repo, today.withDayOfYear(1), today.plusDays(1), awayDays)
     }
 
-    suspend fun week(repo: TaskRepository, weekStart: LocalDate): WeekSummary {
+    suspend fun week(repo: TaskRepository, weekStart: LocalDate, awayDays: Set<LocalDate> = emptySet()): WeekSummary {
         val from = TimeUtils.startOfDay(weekStart)
         val to = TimeUtils.startOfDay(weekStart.plusDays(7))
         val completions = repo.completionsBetween(from, to)
@@ -92,7 +107,7 @@ object SummaryCalculator {
         val results = repo.chainResultsBetween(from, to)
         val prev = repo.chainResultsBetween(TimeUtils.startOfDay(weekStart.minusDays(7)), from)
         val freq = repo.allTasks().associate { it.id to it.frequency }
-        return build(weekStart, completions, events, results, prev, freq, TimeUtils.today())
+        return build(weekStart, completions, events, results, prev, freq, TimeUtils.today(), awayDays)
     }
 
     fun build(
@@ -103,6 +118,7 @@ object SummaryCalculator {
         previousWeek: List<ChainResult>,
         frequencies: Map<String, Frequency>,
         today: LocalDate,
+        awayDays: Set<LocalDate> = emptySet(),
     ): WeekSummary {
         val chains = results.filter { !it.isSingle && it.tasks.isNotEmpty() }
         val rare = setOf(Frequency.WEEKLY, Frequency.BIWEEKLY, Frequency.MONTHLY)
@@ -128,7 +144,7 @@ object SummaryCalculator {
             totalMinutes = completions.sumOf { it.minutes.toDouble() }.toFloat(),
             tasksDone = completions.size,
             notable = notable,
-            score = score(completions, events, weekStart, weekStart.plusDays(7), today),
+            score = score(completions, events, weekStart, weekStart.plusDays(7), today, awayDays),
             fastest = fastest,
             avgDread = avgDread,
             avgReality = avgReality,
