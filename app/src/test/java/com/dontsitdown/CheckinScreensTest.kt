@@ -201,6 +201,26 @@ class CheckinScreensTest {
     }
 
     @Test
+    fun freshInstallOffersToImportFromTheBrowser() {
+        app.settings.update { it.copy(onboarded = true) }
+        val web = """{"boundaries":["no phone in bed"],"goals":[],"log":[],"days":{"${today.minusDays(1)}":{"morning":{"sleep":7,"mood":6,"body":5,"intention":"from the browser"},"evening":null}}}"""
+        val cm = app.getSystemService(android.content.ClipboardManager::class.java)
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("checkin", web))
+        compose.setContent { Wrap { TodayScreen({}, {}, {}, now = { LocalTime.of(8, 30) }) } }
+        waitForText("coming from the browser app?")
+        shot("34-import-card")
+        compose.onNodeWithText("paste").performClick()
+        waitForText("import this?")
+        compose.onNodeWithText("import").performClick()
+        compose.waitForIdle()
+        val d = app.checkin.current
+        assertEquals(listOf("no phone in bed"), d.boundaries)
+        assertEquals("from the browser", d.day(Checkin.key(today.minusDays(1))).morning!!.intention)
+        // Once there's history, the card goes away.
+        compose.waitUntil(5_000) { compose.onAllNodes(hasText("coming from the browser app?")).fetchSemanticsNodes().isEmpty() }
+    }
+
+    @Test
     fun wholeAppStartsOnToday() {
         seed()
         compose.setContent { AppTheme { AppNav(onboarded = true, openTarget = null, onTargetConsumed = {}) } }

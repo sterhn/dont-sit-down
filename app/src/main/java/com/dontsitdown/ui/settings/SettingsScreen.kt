@@ -243,8 +243,6 @@ private fun CheckinSection(s: SettingsState) {
     val app = context.app
     val store = app.checkin
     val data by store.state.collectAsStateWithLifecycle()
-    var pendingImport by remember { mutableStateOf<com.dontsitdown.checkin.CheckinData?>(null) }
-
     val exporter = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json"),
     ) { uri ->
@@ -252,16 +250,6 @@ private fun CheckinSection(s: SettingsState) {
         runCatching { context.contentResolver.openOutputStream(uri)!!.use { it.write(store.export().toByteArray()) } }
             .onSuccess { Toast.makeText(context, "exported", Toast.LENGTH_SHORT).show() }
             .onFailure { Toast.makeText(context, "couldn't write that file", Toast.LENGTH_SHORT).show() }
-    }
-    val importer = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        val parsed = runCatching {
-            context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
-        }.getOrNull()?.let { com.dontsitdown.checkin.CheckinJson.decode(it) }
-        if (parsed == null) Toast.makeText(context, "couldn't read that file", Toast.LENGTH_SHORT).show()
-        else pendingImport = parsed
     }
 
     SectionLabel("check-in")
@@ -284,38 +272,30 @@ private fun CheckinSection(s: SettingsState) {
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Spacer(Modifier.height(10.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-        OutlineButton("import", onClick = { importer.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, modifier = Modifier.weight(1f))
-        OutlineButton("export", onClick = { exporter.launch("daily-checkin-${TimeUtils.today()}.json") }, modifier = Modifier.weight(1f))
-    }
+    Spacer(Modifier.height(14.dp))
+    Text("bring it over from the browser app", style = MaterialTheme.typography.bodyLarge)
     Text(
-        "moving over from the web app? there: progress → export data. here: import that file.",
+        "your history, goals and boundaries. in the browser app: progress → export data (then open file), or copy data (then paste).",
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier.padding(bottom = 8.dp),
     )
-
-    pendingImport?.let { d ->
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { pendingImport = null },
-            title = { Text("import this file?", style = MaterialTheme.typography.titleLarge) },
-            text = {
-                Text(
-                    "${d.days.size} days, ${d.goals.size} goals, ${d.log.size} logged. this replaces the check-ins and goals on this phone (your chores and tasks aren't touched).",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            },
-            confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
-                    store.replaceAll(d)
-                    pendingImport = null
-                    Toast.makeText(context, "imported", Toast.LENGTH_SHORT).show()
-                }) { Text("import", style = MaterialTheme.typography.labelLarge) }
-            },
-            dismissButton = { androidx.compose.material3.TextButton(onClick = { pendingImport = null }) { Text("cancel", style = MaterialTheme.typography.labelLarge) } },
-            containerColor = com.dontsitdown.ui.theme.LocalPaper.current.card,
-        )
+    com.dontsitdown.ui.checkin.CheckinImportButtons()
+    Spacer(Modifier.height(14.dp))
+    Text("take it with you", style = MaterialTheme.typography.bodyLarge)
+    Text(
+        "the same format the browser app reads.",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        OutlineButton("export file", onClick = { exporter.launch("daily-checkin-${TimeUtils.today()}.json") }, modifier = Modifier.weight(1f))
+        OutlineButton("copy data", onClick = {
+            clipboard.setText(androidx.compose.ui.text.AnnotatedString(store.export()))
+            Toast.makeText(context, "copied", Toast.LENGTH_SHORT).show()
+        }, modifier = Modifier.weight(1f))
     }
 }
 

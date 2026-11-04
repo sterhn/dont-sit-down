@@ -203,6 +203,30 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
                 }
             }
 
+            // Fresh install: point at the browser app's history before anything else.
+            val prefs = remember { context.getSharedPreferences("checkin-ui", android.content.Context.MODE_PRIVATE) }
+            var importDismissed by remember { mutableStateOf(prefs.getBoolean("importDismissed", false)) }
+            if (data.days.isEmpty() && data.log.isEmpty() && !importDismissed) {
+                Spacer(Modifier.height(18.dp))
+                PaperCard(tilt = 0.4f, tape = true, color = LocalPaper.current.note) {
+                    CardTitle("coming from the browser app?")
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "bring your history, goals and boundaries over. in the browser app, go to progress and tap export data (then open file here) or copy data (then paste here).",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    CheckinImportButtons()
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        QuietAction("no thanks, start fresh", onClick = {
+                            prefs.edit().putBoolean("importDismissed", true).apply()
+                            importDismissed = true
+                        })
+                    }
+                }
+            }
+
             Spacer(Modifier.height(18.dp))
             Segmented(
                 listOf(
