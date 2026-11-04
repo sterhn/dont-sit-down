@@ -81,17 +81,17 @@ fun GoalsScreen(onOpen: (String) -> Unit, onAdd: () -> Unit) {
     val today = com.dontsitdown.ui.components.rememberToday()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(28.dp))
-        Text("goals.", style = MaterialTheme.typography.displayMedium)
-        Text("small adventures, week by week", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Small adventures, week by week", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Goals", style = MaterialTheme.typography.displayMedium)
 
         val weekly = data.goals.filter { !it.monthly }
         val monthly = data.goals.filter { it.monthly }
         if (weekly.isNotEmpty()) {
-            SectionLabel("this week")
+            SectionLabel("This week")
             weekly.forEachIndexed { i, g -> GoalRow(data, g, today, i, onOpen) }
         }
         if (monthly.isNotEmpty()) {
-            SectionLabel("this month")
+            SectionLabel("This month")
             monthly.forEachIndexed { i, g -> GoalRow(data, g, today, i, onOpen) }
         }
         Spacer(Modifier.height(14.dp))
@@ -102,11 +102,11 @@ fun GoalsScreen(onOpen: (String) -> Unit, onAdd: () -> Unit) {
                 .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp))
                 .clickable(onClick = onAdd),
             contentAlignment = Alignment.Center,
-        ) { Text("+ add a goal", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        ) { Text("+ Add a goal", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 
         val counts = data.goals.map { it to Checkin.entries(data, it).size }.filter { it.second > 0 }
         if (counts.isNotEmpty()) {
-            SectionLabel("so far")
+            SectionLabel("So far")
             counts.chunked(2).forEach { row ->
                 Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     row.forEach { (g, n) -> Tile("$n", Checkin.collectionName(g), Modifier.weight(1f)) }
@@ -142,7 +142,7 @@ private fun GoalRow(data: CheckinData, g: Goal, today: LocalDate, i: Int, onOpen
         Column(Modifier.weight(1f)) {
             Text(g.title.replaceFirstChar { it.uppercase() }, style = HandText.medium)
             Text(
-                if (met) "done this ${g.period}" else "$n of ${g.target} · ${Checkin.periodLeft(g, today)}",
+                if (met) "Done this ${g.period}" else "$n of ${g.target} · ${Checkin.periodLeft(g, today)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -196,7 +196,7 @@ fun GoalDetailScreen(id: String, onBack: () -> Unit) {
                     Spacer(Modifier.height(4.dp))
                     Text(
                         listOfNotNull(
-                            if (g.monthly) "monthly" else "weekly",
+                            if (g.monthly) "Monthly" else "Weekly",
                             if (g.target > 1) "${g.target} times" else null,
                             if (met) "done this ${g.period}" else Checkin.periodLeft(g, today),
                             if (total > 0) "$total logged so far" else null,
@@ -213,33 +213,33 @@ fun GoalDetailScreen(id: String, onBack: () -> Unit) {
             if (g.currentLabel != null) {
                 Spacer(Modifier.height(16.dp))
                 PaperCard(tilt = 0.4f) {
-                    CardTitle(g.currentLabel.lowercase())
+                    CardTitle(g.currentLabel)
                     Spacer(Modifier.height(8.dp))
-                    NoteField(g.current ?: "", { store.setCurrent(g.id, it) }, "title, author…", singleLine = true, key = g.id)
+                    NoteField(g.current ?: "", { store.setCurrent(g.id, it) }, "Title, author…", singleLine = true, key = g.id)
                 }
             }
 
             Spacer(Modifier.height(16.dp))
             PaperCard(tilt = -0.3f, tape = true) {
-                CardTitle("log it")
+                CardTitle("Log it")
                 Spacer(Modifier.height(8.dp))
                 val submit = {
                     val t = text.trim()
-                    if (t.isEmpty()) toaster.show("write a few words first")
+                    if (t.isEmpty()) toaster.show("Write a few words first")
                     else {
                         val before = Checkin.periodCount(store.current, g, p)
                         store.log(g.id, date, t, tag)
                         text = ""; tag = null; fieldKey++
                         val completed = Checkin.periodOf(g, date) == p && before < g.target && before + 1 >= g.target
                         if (completed) {
-                            toaster.show("done for this ${g.period}")
+                            toaster.show("Done for this ${g.period}")
                             toaster.celebrate()
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        } else toaster.show("logged")
+                        } else toaster.show("Logged")
                         date = today
                     }
                 }
-                NoteField("", { text = it }, (g.prompt ?: "what did you do?").lowercase(), singleLine = true, key = fieldKey, onDone = submit)
+                NoteField("", { text = it }, g.prompt ?: "What did you do?", singleLine = true, key = fieldKey, onDone = submit)
                 if (!g.tags.isNullOrEmpty()) {
                     Spacer(Modifier.height(10.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -248,36 +248,36 @@ fun GoalDetailScreen(id: String, onBack: () -> Unit) {
                 }
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Chip("today", date == today, { date = today })
-                    Chip("yesterday", date == today.minusDays(1), { date = today.minusDays(1) })
+                    Chip("Today", date == today, { date = today })
+                    Chip("Yesterday", date == today.minusDays(1), { date = today.minusDays(1) })
                     val other = date != today && date != today.minusDays(1)
-                    Chip(if (other) Checkin.dayMonth(date) else "other day…", other, {
+                    Chip(if (other) Checkin.dayMonth(date) else "Other day…", other, {
                         DatePickerDialog(context, { _, y, mo, d -> date = LocalDate.of(y, mo + 1, d) }, date.year, date.monthValue - 1, date.dayOfMonth).apply {
                             datePicker.maxDate = System.currentTimeMillis()
                         }.show()
                     })
                 }
                 Spacer(Modifier.height(14.dp))
-                BigButton("save", onClick = submit)
+                BigButton("Save", onClick = submit)
             }
 
             if (cur.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 PaperCard(tilt = 0.4f) {
-                    CardTitle("this ${g.period}", trailing = { Text("$n of ${g.target}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) })
+                    CardTitle("This ${g.period}", trailing = { Text("$n of ${g.target}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) })
                     cur.forEach { EntryRow(it, today, false) { removeEntry = it } }
                 }
             }
             if (earlier.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 PaperCard(tilt = -0.4f) {
-                    CardTitle("earlier", trailing = { Text("${earlier.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) })
+                    CardTitle("Earlier", trailing = { Text("${earlier.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) })
                     earlier.forEach { EntryRow(it, today, true) { removeEntry = it } }
                 }
             }
             Spacer(Modifier.height(20.dp))
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                QuietAction("remove this goal", onClick = { confirmRemove = true }, color = MaterialTheme.colorScheme.error)
+                QuietAction("Remove this goal", onClick = { confirmRemove = true }, color = MaterialTheme.colorScheme.error)
             }
             Spacer(Modifier.height(32.dp))
         }
@@ -285,15 +285,15 @@ fun GoalDetailScreen(id: String, onBack: () -> Unit) {
 
     if (confirmRemove) {
         Confirm(
-            "remove \"${g.title.lowercase()}\"?",
-            "everything you logged for it is deleted too.",
-            "remove",
+            "Remove \"${g.title}\"?",
+            "Everything you logged for it is deleted too.",
+            "Remove",
             onYes = { confirmRemove = false; store.removeGoal(g.id); onBack() },
             onNo = { confirmRemove = false },
         )
     }
     removeEntry?.let { e ->
-        Confirm("delete \"${e.text}\"?", null, "delete", onYes = { store.removeEntry(e.id); removeEntry = null }, onNo = { removeEntry = null })
+        Confirm("Delete \"${e.text}\"?", null, "Delete", onYes = { store.removeEntry(e.id); removeEntry = null }, onNo = { removeEntry = null })
     }
 }
 
@@ -320,7 +320,7 @@ internal fun Confirm(title: String, text: String?, yes: String, onYes: () -> Uni
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
         text = text?.let { { Text(it, style = MaterialTheme.typography.bodyMedium) } },
         confirmButton = { TextButton(onClick = onYes) { Text(yes, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error) } },
-        dismissButton = { TextButton(onClick = onNo) { Text("keep", style = MaterialTheme.typography.labelLarge) } },
+        dismissButton = { TextButton(onClick = onNo) { Text("Keep", style = MaterialTheme.typography.labelLarge) } },
         containerColor = LocalPaper.current.card,
         shape = MaterialTheme.shapes.large,
     )
@@ -339,7 +339,7 @@ fun AddGoalScreen(onBack: () -> Unit) {
     fun add(t: String, period: String, n: Int) {
         val err = store.addGoal(t, period, n)
         if (err != null) toaster.show(err) else {
-            toaster.show("goal added")
+            toaster.show("Goal added")
             onBack()
         }
     }
@@ -351,35 +351,35 @@ fun AddGoalScreen(onBack: () -> Unit) {
                 Polaroid(Face.THINKING, "hmm…", width = 110.dp)
                 Spacer(Modifier.width(18.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("add a goal.", style = MaterialTheme.typography.headlineMedium)
-                    Text("something small you'd like to do again and again", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Add a goal", style = MaterialTheme.typography.headlineMedium)
+                    Text("Something small you'd like to do again and again", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(Modifier.height(18.dp))
             PaperCard(tilt = -0.4f, tape = true) {
-                CardTitle("your own")
+                CardTitle("Your own")
                 Spacer(Modifier.height(8.dp))
-                NoteField("", { title = it }, "e.g. call grandma", singleLine = true, onDone = { add(title, if (monthly) "month" else "week", target) })
+                NoteField("", { title = it }, "e.g. Call grandma", singleLine = true, onDone = { add(title, if (monthly) "month" else "week", target) })
                 Spacer(Modifier.height(12.dp))
-                Segmented(listOf(false to "weekly", true to "monthly"), monthly, { monthly = it }, Modifier.fillMaxWidth())
+                Segmented(listOf(false to "Weekly", true to "Monthly"), monthly, { monthly = it }, Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("times per ${if (monthly) "month" else "week"}", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Text("Times per ${if (monthly) "month" else "week"}", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                     Stepper(target, { target = it }, 1..7, suffix = "×")
                 }
                 Spacer(Modifier.height(14.dp))
-                BigButton("add goal", onClick = { add(title, if (monthly) "month" else "week", target) })
+                BigButton("Add goal", onClick = { add(title, if (monthly) "month" else "week", target) })
             }
             val existing = data.goals.map { it.title.lowercase() }.toSet()
             val ideas = Checkin.GOAL_IDEAS.filter { it.first.lowercase() !in existing }
             if (ideas.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 PaperCard(tilt = 0.4f) {
-                    CardTitle("or pick an idea")
+                    CardTitle("Or pick an idea")
                     ideas.forEach { (t, period) ->
                         Row(Modifier.fillMaxWidth().clickable { add(t, period, 1) }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(t, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                            Text(if (period == "week") "weekly" else "monthly", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(if (period == "week") "Weekly" else "Monthly", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("  +", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         }
                     }

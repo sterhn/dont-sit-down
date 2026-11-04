@@ -99,7 +99,7 @@ class CheckinTest {
         assertEquals("held a and b; slipped on c", lines["boundaries"])
         assertEquals("rest day", lines["gym"])
         val md = Checkin.dayMarkdown(d, today, chores = listOf("dishes" to 6.2f))
-        assertTrue(md, md.startsWith("# wednesday 4 november"))
+        assertTrue(md, md.startsWith("# Wednesday 4 November"))
         assertTrue(md, md.contains("- dishes: 6 min"))
     }
 

@@ -9,9 +9,11 @@ One Android app with two jobs:
   Small weekly and monthly goals, a journal, a week story. No streaks, on purpose: the days you wrote
   something are quietly marked, and stats opens on how you've been feeling, not how consistent you've been.
 
-They share one look (ink and amber, graph paper, the polaroid) and talk to each other: the evening
-check-in shows what chores you got done, the today page points at tonight's chain, and the week story
-includes both.
+They look like two different apps, on purpose. The check-in is the web app's graph-paper notebook (navy ink,
+pastel cards stuck on crooked, Gaegu and Nunito, the character everywhere) and follows the phone's light/dark
+setting. Don't sit down is stark: ink, amber, monospace, no paper, no character. The one place they touch is the
+black-and-amber chores ticket taped into the today page. They still talk to each other: the evening check-in
+shows what chores you got done, and the week story includes both.
 
 Kotlin + Jetpack Compose + Room. Everything stays on the phone: no accounts, no sync, no analytics.
 
@@ -19,10 +21,12 @@ Kotlin + Jetpack Compose + Room. Everything stays on the phone: no accounts, no 
 
 | | |
 |---|---|
+| | **the check-in** (notebook) |
 | **today** | the check-in. morning / evening, yesterday / today (before 5am it opens on last night). autosaves every tap. a strip at the bottom points at tonight's chain and the next goal |
-| **chain** | don't sit down: the chain, the timer, "just one", "not now", and **not home today**. `tasks →` at the top edits the task list |
 | **goals** | small adventures, weekly or monthly, with a doodle each |
-| **stats** | check-in: how you've been lately, last 7 days, averages, chart, boundary hold rates, mood after sleep, journal, week story. chores: the weekly couch-vs-you summary |
+| **progress** | how you've been lately, last 7 days, averages, chart, boundary hold rates, mood after sleep, journal, week story |
+| | **don't sit down** (stark) |
+| **chain** | don't sit down: the chain, the timer, "just one", "not now", and **not home today**. `week →` at the top is the couch-vs-you summary, `tasks →` edits the task list |
 | **settings** | your tasks, days away, the takeover, check-in reminders, check-in import / export, full backup, theme |
 
 ## Not home today

@@ -199,11 +199,11 @@ object Checkin {
     private val DAY_MONTH = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
     private val MONTH_YEAR = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.UK)
 
-    fun pretty(d: LocalDate): String = d.format(LONG).lowercase()
-    fun short(d: LocalDate, today: LocalDate): String = d.format(if (d.year == today.year) SHORT else SHORT_YEAR).lowercase()
+    fun pretty(d: LocalDate): String = d.format(LONG)
+    fun short(d: LocalDate, today: LocalDate): String = d.format(if (d.year == today.year) SHORT else SHORT_YEAR)
     fun dayMonth(d: LocalDate): String = d.format(DAY_MONTH).lowercase()
-    fun monthYear(d: LocalDate): String = d.format(MONTH_YEAR).lowercase()
-    fun narrow(d: LocalDate): String = d.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.UK).lowercase()
+    fun monthYear(d: LocalDate): String = d.format(MONTH_YEAR)
+    fun narrow(d: LocalDate): String = d.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.UK)
 
     // ---- markdown ----
 
@@ -261,7 +261,7 @@ object Checkin {
             val story = storyLines(data, d, true)
             val ch = chores[d].orEmpty()
             if (bits.isEmpty() && story.isEmpty() && ch.isEmpty()) continue
-            lines += "## ${pretty(d)}"
+            lines += "## ${pretty(d).lowercase()}"
             if (bits.isNotEmpty()) lines += "- ${bits.joinToString(" · ")}"
             story.forEach { (label, text) -> lines += "- $label: $text" }
             if (ch.isNotEmpty()) lines += "- chores: " + ch.joinToString(", ") { (n, m) -> "$n ${m.roundToInt().coerceAtLeast(1)}m" }

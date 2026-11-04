@@ -97,8 +97,6 @@ fun OnboardingScreen(onDone: () -> Unit) {
         when (step) {
             0 -> Page {
                 Spacer(Modifier.weight(1f))
-                com.dontsitdown.ui.components.Polaroid(com.dontsitdown.checkin.Face.COFFEE, "hi.", width = 120.dp, develop = true)
-                Spacer(Modifier.height(28.dp))
                 Text("this app has two jobs:", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
                 Text("catch you before you sit down.", style = MaterialTheme.typography.displayLarge)

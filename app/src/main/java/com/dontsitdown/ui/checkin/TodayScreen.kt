@@ -51,6 +51,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dontsitdown.app
 import com.dontsitdown.checkin.Checkin
@@ -86,6 +88,13 @@ import kotlin.math.roundToInt
 /** A short-lived face after something happens: a slip, a milestone, a blank check-in. */
 private data class Reaction(val face: Face, val caption: String?, val ms: Long, val id: Int)
 
+/** One-shot requests from elsewhere in the app, e.g. "close the day" after a chain. */
+object TodayIntent {
+    private val evening = kotlinx.coroutines.flow.MutableStateFlow(false)
+    fun openEvening() { evening.value = true }
+    internal fun consumeEvening(): Boolean = evening.value.also { evening.value = false }
+}
+
 /** The photo develops once per app start, not every time you come back to the tab. */
 private var developedThisRun = false
 
@@ -110,6 +119,12 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
     // Before 5am it's still last night: open on the evening, pointed at yesterday.
     var evening by rememberSaveable(today) { mutableStateOf(hour < 5 || hour >= 17) }
     var eveningOffset by rememberSaveable(today) { mutableIntStateOf(if (hour < 5) -1 else 0) }
+    LaunchedEffect(Unit) {
+        if (TodayIntent.consumeEvening()) {
+            evening = true
+            eveningOffset = if (hour < 5) -1 else 0
+        }
+    }
     val eveningDate = today.plusDays(eveningOffset.toLong())
     val away = settings.isAway(today)
 
@@ -172,17 +187,17 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
                     val date = if (evening) eveningDate else today
                     val saved = if (evening) eveningRec?.savedAt != null else morning?.savedAt != null
                     Text(
-                        Checkin.pretty(date) + if (saved) " · saved" else "",
+                        Checkin.pretty(date) + if (saved) " · Saved" else " · Saves as you go",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         when {
-                            away && !evening -> "day off."
-                            evening && eveningOffset == -1 -> "last night."
-                            evening -> "good evening."
-                            else -> "good morning."
+                            away && !evening -> "Day off"
+                            evening && eveningOffset == -1 -> "Last night"
+                            evening -> "Good evening"
+                            else -> "Good morning"
                         },
                         style = MaterialTheme.typography.headlineMedium,
                     )
@@ -196,7 +211,7 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
                     Spacer(Modifier.height(5.dp))
                     // A record, not a scoreboard: no counting, no streaks.
                     Text(
-                        if (filledToday) "today's written down" else "whenever you're ready",
+                        if (filledToday) "Today's written down" else "Whenever you're ready",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -209,17 +224,17 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
             if (data.days.isEmpty() && data.log.isEmpty() && !importDismissed) {
                 Spacer(Modifier.height(18.dp))
                 PaperCard(tilt = 0.4f, tape = true, color = LocalPaper.current.note) {
-                    CardTitle("coming from the browser app?")
+                    CardTitle("Coming from the browser app?")
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "bring your history, goals and boundaries over. in the browser app, go to progress and tap export data (then open file here) or copy data (then paste here).",
+                        "Bring your history, goals and boundaries over. In the browser app, go to Progress and tap Export data (then Open file here) or Copy data (then Paste here).",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(12.dp))
                     CheckinImportButtons()
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        QuietAction("no thanks, start fresh", onClick = {
+                        QuietAction("No thanks, start fresh", onClick = {
                             prefs.edit().putBoolean("importDismissed", true).apply()
                             importDismissed = true
                         })
@@ -230,8 +245,8 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
             Spacer(Modifier.height(18.dp))
             Segmented(
                 listOf(
-                    false to "morning" + if (Checkin.morningFilled(morning)) " ✓" else "",
-                    true to "evening" + if (Checkin.eveningFilled(data.day(Checkin.key(today)).evening)) " ✓" else "",
+                    false to "Morning" + if (Checkin.morningFilled(morning)) " ✓" else "",
+                    true to "Evening" + if (Checkin.eveningFilled(data.day(Checkin.key(today)).evening)) " ✓" else "",
                 ),
                 evening, { evening = it }, Modifier.fillMaxWidth(),
             )
@@ -249,7 +264,7 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
             } else {
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf(-1 to "yesterday", 0 to "today").forEach { (off, label) ->
+                    listOf(-1 to "Yesterday", 0 to "Today").forEach { (off, label) ->
                         val done = Checkin.eveningFilled(data.day(Checkin.key(today.plusDays(off.toLong()))).evening)
                         Chip(label + if (done) " ✓" else "", eveningOffset == off, { eveningOffset = off })
                     }
@@ -299,20 +314,20 @@ private fun MorningPage(data: CheckinData, today: LocalDate, m: Morning?, onReac
     val paper = LocalPaper.current
     Spacer(Modifier.height(14.dp))
     PaperCard(tilt = -0.5f) {
-        Scale("sleep", m?.sleep, paper.sleep, { v -> store.setMorning(today) { it.copy(sleep = v) } }, ends = "restless" to "deep")
+        Scale("Sleep", m?.sleep, paper.sleep, { v -> store.setMorning(today) { it.copy(sleep = v) } }, ends = "Restless" to "Deep")
         Divider()
-        Scale("body", m?.body, paper.body, { v -> store.setMorning(today) { it.copy(body = v) } }, ends = "aching" to "strong")
+        Scale("Body", m?.body, paper.body, { v -> store.setMorning(today) { it.copy(body = v) } }, ends = "Aching" to "Strong")
         Divider()
-        Scale("mood", m?.mood, paper.mood, { v -> store.setMorning(today) { it.copy(mood = v) } }, moodWord = true)
+        Scale("Mood", m?.mood, paper.mood, { v -> store.setMorning(today) { it.copy(mood = v) } }, moodWord = true)
     }
     Spacer(Modifier.height(16.dp))
     PaperCard(tilt = 0.45f, tape = true) {
-        CardTitle("intention for today")
+        CardTitle("Intention for today")
         Spacer(Modifier.height(10.dp))
-        NoteField(m?.intention ?: "", { t -> store.setMorning(today) { it.copy(intention = t) } }, "what's the day for?", key = Checkin.key(today))
+        NoteField(m?.intention ?: "", { t -> store.setMorning(today) { it.copy(intention = t) } }, "What's the day for?", key = Checkin.key(today))
     }
     Spacer(Modifier.height(20.dp))
-    BigButton("done →", onClick = onDone)
+    BigButton("Done →", onClick = onDone)
 }
 
 @Composable
@@ -340,11 +355,11 @@ private fun EveningPage(
 
     Spacer(Modifier.height(14.dp))
     PaperCard(tilt = -0.5f) {
-        CardTitle("how are you now?")
+        CardTitle("How are you now?")
         Spacer(Modifier.height(12.dp))
-        Scale("body", e.body, paper.body, { v -> store.setEvening(date) { it.copy(body = v) } }, ends = "aching" to "strong")
+        Scale("Body", e.body, paper.body, { v -> store.setEvening(date) { it.copy(body = v) } }, ends = "Aching" to "Strong")
         Divider()
-        Scale("mood", e.mood, paper.mood, { v -> store.setEvening(date) { it.copy(mood = v) } }, moodWord = true)
+        Scale("Mood", e.mood, paper.mood, { v -> store.setEvening(date) { it.copy(mood = v) } }, moodWord = true)
     }
 
     // The morning, read back: what you said the day was for.
@@ -352,7 +367,7 @@ private fun EveningPage(
     if (Checkin.morningFilled(m)) {
         Spacer(Modifier.height(16.dp))
         PaperCard(tilt = 0.45f) {
-            CardTitle(if (yesterday) "that morning" else "this morning")
+            CardTitle(if (yesterday) "That morning" else "This morning")
             if (!m!!.intention.isBlank()) {
                 Spacer(Modifier.height(14.dp))
                 Box(Modifier.padding(top = 4.dp)) {
@@ -364,7 +379,7 @@ private fun EveningPage(
                             .border(1.dp, paper.cardLine, RoundedCornerShape(6.dp))
                             .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 12.dp),
                     ) {
-                        Text("you said ${if (yesterday) "yesterday" else "today"} was for".uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("You said ${if (yesterday) "yesterday" else "today"} was for".uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(m.intention.trim(), style = HandText.medium)
                     }
                     com.dontsitdown.ui.components.Tape(Modifier.align(Alignment.TopStart).padding(start = 16.dp).offset(y = (-10).dp), width = 46.dp, tilt = -6f)
@@ -373,9 +388,9 @@ private fun EveningPage(
             if (m.sleep != null || m.mood != null || m.body != null) {
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Tile(m.sleep?.toString() ?: "–", "sleep", Modifier.weight(1f), tint = paper.sleep.copy(alpha = 0.22f))
-                    Tile(m.body?.toString() ?: "–", "body", Modifier.weight(1f), tint = paper.body.copy(alpha = 0.22f))
-                    Tile(m.mood?.toString() ?: "–", "mood" + (m.mood?.let { " · ${Checkin.moodWord(it)}" } ?: ""), Modifier.weight(1.3f), tint = paper.mood.copy(alpha = 0.22f))
+                    Tile(m.sleep?.toString() ?: "–", "Sleep", Modifier.weight(1f), tint = paper.sleep.copy(alpha = 0.22f))
+                    Tile(m.body?.toString() ?: "–", "Body", Modifier.weight(1f), tint = paper.body.copy(alpha = 0.22f))
+                    Tile(m.mood?.toString() ?: "–", "Mood" + (m.mood?.let { " · ${Checkin.moodWord(it)}" } ?: ""), Modifier.weight(1.3f), tint = paper.mood.copy(alpha = 0.22f))
                 }
             }
         }
@@ -384,7 +399,7 @@ private fun EveningPage(
     // What the chores side saw today.
     Spacer(Modifier.height(16.dp))
     PaperCard(tilt = -0.35f) {
-        CardTitle(if (yesterday) "moved that day" else "moved today", trailing = {
+        CardTitle(if (yesterday) "Moved that day" else "Moved today", trailing = {
             if (chores.isNotEmpty()) Text("${chores.sumOf { it.minutes.toDouble() }.roundToInt().coerceAtLeast(1)} min", style = Nums.small, color = MaterialTheme.colorScheme.primary)
         })
         Spacer(Modifier.height(6.dp))
@@ -405,20 +420,20 @@ private fun EveningPage(
     Spacer(Modifier.height(16.dp))
     var editing by rememberSaveable { mutableStateOf(false) }
     PaperCard(tilt = 0.4f) {
-        CardTitle("boundaries", trailing = { QuietAction(if (editing) "done" else "edit", onClick = { editing = !editing }) })
+        CardTitle("Boundaries", trailing = { QuietAction(if (editing) "Done" else "Edit", onClick = { editing = !editing }) })
         val names = (data.boundaries + e.boundaries.filterValues { it != null }.keys).distinct()
         names.forEach { b ->
             val st = e.boundaries[b]
             val tracked = b in data.boundaries
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(b.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).then(if (tracked) Modifier else Modifier.padding(end = 4.dp)), color = if (tracked) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant)
-                Chip("held", st == "held", {
+                Chip("Held", st == "held", {
                     val next = if (st == "held") null else "held"
                     store.setEvening(date) { it.copy(boundaries = it.boundaries + (b to next)) }
                     if (next != null) onReact(Face.NICE, 1800, null)
                 }, onColor = paper.held)
                 Spacer(Modifier.width(6.dp))
-                Chip("slipped", st == "slipped", {
+                Chip("Slipped", st == "slipped", {
                     val next = if (st == "slipped") null else "slipped"
                     store.setEvening(date) { it.copy(boundaries = it.boundaries + (b to next)) }
                     if (next != null) onReact(Face.SIGH, 1800, null)
@@ -434,21 +449,21 @@ private fun EveningPage(
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) {
-                    NoteField("", { draft = it }, "new boundary…", singleLine = true, key = fieldKey, onDone = {
+                    NoteField("", { draft = it }, "New boundary…", singleLine = true, key = fieldKey, onDone = {
                         if (store.addBoundary(draft)) { draft = ""; fieldKey++ }
                     })
                 }
-                QuietAction("add", onClick = { if (store.addBoundary(draft)) { draft = ""; fieldKey++ } }, color = MaterialTheme.colorScheme.primary)
+                QuietAction("Add", onClick = { if (store.addBoundary(draft)) { draft = ""; fieldKey++ } }, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
 
     Spacer(Modifier.height(16.dp))
     PaperCard(tilt = -0.45f) {
-        CardTitle("gym")
+        CardTitle("Gym")
         Spacer(Modifier.height(10.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(Triple("went", "went", paper.held), Triple("rest", "rest day", paper.rest), Triple("skipped", "skipped", paper.slipped)).forEach { (v, label, c) ->
+            listOf(Triple("went", "Went", paper.held), Triple("rest", "Rest day", paper.rest), Triple("skipped", "Skipped", paper.slipped)).forEach { (v, label, c) ->
                 Chip(label, e.gym == v, {
                     val next = if (e.gym == v) null else v
                     store.setEvening(date) { it.copy(gym = next) }
@@ -460,30 +475,33 @@ private fun EveningPage(
 
     Spacer(Modifier.height(16.dp))
     PaperCard(tilt = 0.35f) {
-        CardTitle("spent ${if (yesterday) "that day" else "today"} (rough)")
+        CardTitle("Spent ${if (yesterday) "that day" else "today"} (rough)")
         Spacer(Modifier.height(10.dp))
-        NoteField(e.spent, { t -> store.setEvening(date) { it.copy(spent = t) } }, "ballpark is fine", singleLine = true, key = "$key-spent")
+        NoteField(e.spent, { t -> store.setEvening(date) { it.copy(spent = t) } }, "Ballpark is fine", singleLine = true, key = "$key-spent")
     }
 
     Spacer(Modifier.height(16.dp))
     PaperCard(tilt = -0.4f, tape = true) {
-        CardTitle("what happened")
+        CardTitle("What happened")
         Spacer(Modifier.height(10.dp))
-        NoteField(e.happened, { t -> store.setEvening(date) { it.copy(happened = t) } }, "the shape of the day", key = "$key-happened")
+        NoteField(e.happened, { t -> store.setEvening(date) { it.copy(happened = t) } }, "The shape of the day", key = "$key-happened")
         Spacer(Modifier.height(16.dp))
-        CardTitle("one honest thing")
+        CardTitle("One honest thing")
         Spacer(Modifier.height(10.dp))
-        NoteField(e.honest, { t -> store.setEvening(date) { it.copy(honest = t) } }, "say it plainly", key = "$key-honest")
+        NoteField(e.honest, { t -> store.setEvening(date) { it.copy(honest = t) } }, "Say it plainly", key = "$key-honest")
     }
 
     Spacer(Modifier.height(20.dp))
-    BigButton("done →", onClick = onDone)
+    BigButton("Done →", onClick = onDone)
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        QuietAction("copy daily note as markdown", onClick = onCopy)
+        QuietAction("Copy daily note as markdown", onClick = onCopy)
     }
 }
 
-/** Where the two apps meet: tonight's chain, from the check-in page. */
+/**
+ * Where the two apps meet: a black-and-amber ticket from the don't-sit-down side, taped into
+ * the notebook. Stark on purpose, so it's obvious which half you're about to step into.
+ */
 @Composable
 private fun ChainStrip(away: Boolean, choresToday: List<TaskCompletion>, onClick: () -> Unit) {
     val app = LocalContext.current.app
@@ -492,16 +510,33 @@ private fun ChainStrip(away: Boolean, choresToday: List<TaskCompletion>, onClick
     }
     val done = choresToday.isNotEmpty()
     val (kicker, title, go) = when {
-        done -> Triple("chores · done today", "${choresToday.size} done, ${TimeUtils.wholeMinutes(choresToday.sumOf { it.minutes.toDouble() }.toFloat())} min", "✓")
-        away -> Triple("chores · day off", "not home today", "›")
-        minutes != null && minutes!! > 0f -> Triple("chores · tonight", "don't sit down. ${TimeUtils.wholeMinutes(minutes!!)} min.", "go ›")
+        done -> Triple("chores · done today", "${choresToday.size} done. ${TimeUtils.wholeMinutes(choresToday.sumOf { it.minutes.toDouble() }.toFloat())} min.", "✓")
+        away -> Triple("chores · day off", "not home today.", "›")
+        minutes != null && minutes!! > 0f -> Triple("chores · tonight", "don't sit down. ${TimeUtils.wholeMinutes(minutes!!)} min.", "GO ›")
         else -> Triple("chores", "nothing due. suspicious.", "›")
     }
-    Strip(kicker, title, go, onClick, leading = {
-        Box(Modifier.size(34.dp).background(if (done) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(4.dp)).border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
-            Text(if (away && !done) "—" else "▲", style = MaterialTheme.typography.labelMedium, color = if (done) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
+    val ink = com.dontsitdown.ui.theme.Ink
+    val amber = com.dontsitdown.ui.theme.Amber
+    Box {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 60.dp)
+                .rotate(-0.6f)
+                .paperShadow(shape = 3.dp, color = LocalPaper.current.shadow)
+                .background(ink, RoundedCornerShape(3.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(kicker.uppercase(), fontFamily = com.dontsitdown.ui.theme.Mono, fontSize = 10.sp, letterSpacing = 1.sp, color = amber)
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = com.dontsitdown.ui.theme.Bone, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Text(go, fontFamily = com.dontsitdown.ui.theme.Mono, fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 1.sp, color = amber)
         }
-    }, highlight = !done && !away)
+        com.dontsitdown.ui.components.Tape(Modifier.align(Alignment.TopEnd).padding(end = 24.dp).offset(y = (-8).dp), width = 44.dp, tilt = 8f)
+    }
 }
 
 @Composable
@@ -509,13 +544,13 @@ private fun GoalStrip(data: CheckinData, today: LocalDate, onOpenGoal: (String) 
     if (data.goals.isEmpty()) return
     val pending = Checkin.pendingGoals(data, today)
     if (pending.isEmpty()) {
-        Strip("goals · all done", "every goal is ticked off", "›", onOpenGoals, leading = { DoodleIcon(com.dontsitdown.checkin.Doodle.STAR, size = 34.dp) })
+        Strip("All done", "Every goal is ticked off", "›", onOpenGoals, leading = { DoodleIcon(com.dontsitdown.checkin.Doodle.STAR, size = 34.dp) })
         return
     }
     val (g, n) = pending.first()
     val more = pending.size - 1
     Strip(
-        "up next · ${Checkin.periodLeft(g, today)}" + if (more > 0) " · $more more" else "",
+        "Up next · ${Checkin.periodLeft(g, today)}" + if (more > 0) " · $more more" else "",
         g.title.replaceFirstChar { it.uppercase() },
         "$n/${g.target} ›",
         { onOpenGoal(g.id) },
@@ -526,14 +561,15 @@ private fun GoalStrip(data: CheckinData, today: LocalDate, onOpenGoal: (String) 
 @Composable
 internal fun Strip(kicker: String, title: String, go: String, onClick: () -> Unit, leading: @Composable () -> Unit, highlight: Boolean = false) {
     val paper = LocalPaper.current
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(paper.radius)
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .paperShadow(color = paper.shadow)
-            .background(paper.card, shape)
-            .border(1.dp, if (highlight) MaterialTheme.colorScheme.primary else paper.cardLine, shape)
+            .rotate(0.6f)
+            .paperShadow(shape = paper.radius, color = paper.shadow)
+            .background(paper.noteBlue, shape)
+            .border(paper.border, paper.cardLine, shape)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

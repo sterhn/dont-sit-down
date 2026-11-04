@@ -138,14 +138,14 @@ fun PaperCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val paper = LocalPaper.current
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(paper.radius)
     Box(modifier.padding(top = if (tape) 8.dp else 0.dp).rotate(tilt)) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .paperShadow(color = paper.shadow)
+                .paperShadow(shape = paper.radius, color = paper.shadow)
                 .background(color ?: paper.card, shape)
-                .border(1.dp, paper.cardLine, shape)
+                .border(paper.border, paper.cardLine, shape)
                 .padding(padding),
             content = content,
         )
@@ -187,7 +187,7 @@ fun Polaroid(
                 .width(width)
                 .paperShadow(shape = 1.dp, color = paper.shadow)
                 .background(paper.polaroid)
-                .border(1.dp, paper.cardLine)
+                .border(paper.border, paper.cardLine)
                 .then(
                     if (onPoke != null) Modifier.clickable(remember { MutableInteractionSource() }, indication = null) {
                         onPoke()
@@ -293,7 +293,7 @@ fun Scale(
                 for (i in 1..10) {
                     val on = value != null && i <= value
                     val tip = i == value
-                    val shape = RoundedCornerShape(4.dp)
+                    val shape = RoundedCornerShape(if (paper.pills) 6.dp else 4.dp)
                     Box(
                         Modifier
                             .weight(1f)
@@ -302,19 +302,19 @@ fun Scale(
                             .background(
                                 when {
                                     tip -> color
-                                    on -> color.copy(alpha = 0.4f)
+                                    on -> lerp(paper.card, color, 0.38f)
                                     else -> Color.Transparent
                                 },
                                 shape,
                             )
-                            .border(1.dp, if (tip) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f) else paper.cardLine, shape),
+                            .border(if (paper.pills) 1.5.dp else 1.dp, if (tip) paper.cardLine else paper.segLine, shape),
                     )
                 }
             }
         }
         if (moodWord || ends != null) {
             Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                val (a, b) = ends ?: ("drained" to "radiant")
+                val (a, b) = ends ?: ("Drained" to "Radiant")
                 Text(a, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     if (moodWord) {
@@ -332,8 +332,9 @@ fun Scale(
 
 /** A small toggle chip; [on] fills it with [onColor]. */
 @Composable
-fun Chip(text: String, on: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, onColor: Color? = null, shape: Shape = RoundedCornerShape(4.dp)) {
+fun Chip(text: String, on: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, onColor: Color? = null, shape: Shape? = null) {
     val paper = LocalPaper.current
+    val shape = shape ?: if (paper.pills) CircleShape else RoundedCornerShape(4.dp)
     val haptics = LocalHapticFeedback.current
     val fill = onColor ?: MaterialTheme.colorScheme.primary
     val filledText = if (onColor == null) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
@@ -341,7 +342,7 @@ fun Chip(text: String, on: Boolean, onClick: () -> Unit, modifier: Modifier = Mo
         modifier
             .heightIn(min = 40.dp)
             .background(if (on) fill else paper.card, shape)
-            .border(1.dp, if (on) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f) else paper.cardLine, shape)
+            .border(if (paper.pills) 1.5.dp else 1.dp, if (on) paper.cardLine else paper.segLine, shape)
             .clickable {
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
@@ -397,7 +398,7 @@ fun WeekDots(done: List<Boolean>, todayIndex: Int, letters: List<String>, modifi
 fun ThinBar(fraction: Float, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.primary, height: Dp = 6.dp) {
     val anim = remember { Animatable(0f) }
     LaunchedEffect(fraction) { anim.animateTo(fraction.coerceIn(0f, 1f), tween(700, easing = FastOutSlowInEasing)) }
-    Box(modifier.height(height).border(1.dp, LocalPaper.current.cardLine, CircleShape).padding(1.dp)) {
+    Box(modifier.height(height).border(1.5.dp, LocalPaper.current.segLine, CircleShape).padding(1.dp)) {
         Box(Modifier.fillMaxWidth(anim.value).height(height).background(color, CircleShape))
     }
 }
@@ -421,7 +422,7 @@ fun NoteField(
     val paper = LocalPaper.current
     var text by remember(key) { mutableStateOf(initial) }
     var focused by remember { mutableStateOf(false) }
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(if (paper.pills) 10.dp else 6.dp)
     androidx.compose.foundation.text.BasicTextField(
         value = text,
         onValueChange = {
@@ -445,7 +446,7 @@ fun NoteField(
                 Modifier
                     .fillMaxWidth()
                     .background(if (focused) paper.card else Color.Transparent, shape)
-                    .border(1.dp, if (focused) MaterialTheme.colorScheme.primary else paper.cardLine, shape)
+                    .border(1.5.dp, if (focused) paper.cardLine else paper.segLine, shape)
                     .padding(horizontal = 13.dp, vertical = 11.dp),
             ) {
                 if (text.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -472,11 +473,11 @@ fun CardTitle(text: String, modifier: Modifier = Modifier, trailing: @Composable
 @Composable
 fun Tile(value: String, label: String, modifier: Modifier = Modifier, tint: Color? = null, extra: (@Composable () -> Unit)? = null) {
     val paper = LocalPaper.current
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(if (paper.pills) 10.dp else 6.dp)
     Column(
         modifier
             .background(tint ?: paper.card, shape)
-            .border(1.dp, paper.cardLine, shape)
+            .border(if (paper.pills) 1.5.dp else 1.dp, paper.cardLine, shape)
             .padding(horizontal = 11.dp, vertical = 9.dp),
     ) {
         Row(verticalAlignment = Alignment.Bottom) {

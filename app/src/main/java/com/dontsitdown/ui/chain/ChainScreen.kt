@@ -142,7 +142,7 @@ class ChainViewModel(application: Application) : AndroidViewModel(application) {
 }
 
 @Composable
-fun ChainScreen(onJustOne: () -> Unit, onTasks: () -> Unit = {}, vm: ChainViewModel = viewModel()) {
+fun ChainScreen(onJustOne: () -> Unit, onTasks: () -> Unit = {}, onWeek: () -> Unit = {}, onCloseDay: () -> Unit = {}, vm: ChainViewModel = viewModel()) {
     val state by vm.session.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val away = settings.isAway(TimeUtils.today())
@@ -158,9 +158,9 @@ fun ChainScreen(onJustOne: () -> Unit, onTasks: () -> Unit = {}, vm: ChainViewMo
     ) { (phase, _) ->
         val s = state
         when {
-            vm.restingAfter != null && s == null -> Resting(vm.restingAfter!!, onAnother = vm::wakeUp)
+            vm.restingAfter != null && s == null -> Resting(vm.restingAfter!!, onAnother = vm::wakeUp, onCloseDay = onCloseDay)
             away && (s == null || phase == Phase.READY) -> Away(settings, onHome = vm::comeHome, onJustOne = onJustOne)
-            s == null || phase == Phase.READY -> ReadyContent(s, settings.negotiator || settings.ghost, vm, onJustOne, onTasks, onSkip = { picking = true })
+            s == null || phase == Phase.READY -> ReadyContent(s, settings.negotiator || settings.ghost, vm, onJustOne, onTasks, onWeek, onSkip = { picking = true })
             phase == Phase.DREAD -> DreadScreen(onPick = vm::setDread)
             phase == Phase.ACTIVE -> TimerScreen(s, onDone = vm::done, onBail = vm::abandon)
             phase == Phase.BETWEEN -> BetweenScreen(s, onNext = vm::next, onEnough = vm::finishEarly)
@@ -170,7 +170,7 @@ fun ChainScreen(onJustOne: () -> Unit, onTasks: () -> Unit = {}, vm: ChainViewMo
 }
 
 @Composable
-private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewModel, onJustOne: () -> Unit, onTasks: () -> Unit, onSkip: () -> Unit) {
+private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewModel, onJustOne: () -> Unit, onTasks: () -> Unit, onWeek: () -> Unit, onSkip: () -> Unit) {
     var refusing by rememberSaveable { mutableStateOf(false) }
     val settings by vm.settings.collectAsStateWithLifecycle()
 
@@ -196,6 +196,7 @@ private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewMode
         Modifier.fillMaxSize().padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
     ) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+            QuietAction("week →", onClick = onWeek)
             QuietAction("tasks →", onClick = onTasks)
         }
         Spacer(Modifier.height(4.dp))
@@ -250,14 +251,12 @@ private fun ReadyContent(s: SessionState?, canRefuse: Boolean, vm: ChainViewMode
 }
 
 @Composable
-private fun Resting(minutes: Float, onAnother: () -> Unit) {
+private fun Resting(minutes: Float, onAnother: () -> Unit, onCloseDay: () -> Unit) {
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.Start,
     ) {
-        com.dontsitdown.ui.components.Polaroid(com.dontsitdown.checkin.Face.COZY, "earned it", width = 140.dp, tilt = 3f)
-        Spacer(Modifier.height(28.dp))
         Text("now sit down.", style = MaterialTheme.typography.displayLarge)
         Spacer(Modifier.height(12.dp))
         Text(
@@ -266,6 +265,9 @@ private fun Resting(minutes: Float, onAnother: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(48.dp))
+        // Both halves in one go: the chores are done, so close the day while you're at it.
+        com.dontsitdown.ui.components.OutlineButton("close the day →", onClick = onCloseDay, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
         QuietAction("actually, another chain", onClick = onAnother)
     }
 }
@@ -278,9 +280,6 @@ private fun Away(settings: com.dontsitdown.util.SettingsState, onHome: () -> Uni
         Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center,
     ) {
-        Spacer(Modifier.height(24.dp))
-        com.dontsitdown.ui.components.Polaroid(com.dontsitdown.checkin.Face.AWAY, "not home", width = 150.dp, tilt = -4f)
-        Spacer(Modifier.height(28.dp))
         Text(MessageGenerator.AWAY_HEADLINE, style = MaterialTheme.typography.displayLarge)
         Spacer(Modifier.height(12.dp))
         Text(

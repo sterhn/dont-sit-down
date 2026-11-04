@@ -40,3 +40,26 @@ object HandText {
     val medium = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 23.sp, lineHeight = 25.sp)
     val small = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 19.sp, lineHeight = 21.sp)
 }
+
+/** Nunito: the notebook's body face. */
+val Rounded = androidx.compose.ui.text.font.FontFamily(
+    androidx.compose.ui.text.font.Font(com.dontsitdown.R.font.nunito_regular, FontWeight.Normal),
+    androidx.compose.ui.text.font.Font(com.dontsitdown.R.font.nunito_semibold, FontWeight.SemiBold),
+    androidx.compose.ui.text.font.Font(com.dontsitdown.R.font.nunito_bold, FontWeight.Bold),
+    androidx.compose.ui.text.font.Font(com.dontsitdown.R.font.nunito_extrabold, FontWeight.ExtraBold),
+)
+
+/** The check-in's type: handwritten headings, rounded everything else. Sentence case, no mono. */
+val NotebookTypography = Typography(
+    displayLarge = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 42.sp, lineHeight = 42.sp),
+    displayMedium = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 37.sp, lineHeight = 37.sp),
+    headlineMedium = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 34.sp),
+    titleLarge = TextStyle(fontFamily = Hand, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 26.sp),
+    titleMedium = TextStyle(fontFamily = Rounded, fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 20.sp),
+    bodyLarge = TextStyle(fontFamily = Rounded, fontSize = 15.sp, lineHeight = 22.sp),
+    bodyMedium = TextStyle(fontFamily = Rounded, fontSize = 14.sp, lineHeight = 20.sp),
+    bodySmall = TextStyle(fontFamily = Rounded, fontSize = 13.sp, lineHeight = 18.sp),
+    labelLarge = TextStyle(fontFamily = Rounded, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp),
+    labelMedium = TextStyle(fontFamily = Rounded, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+    labelSmall = TextStyle(fontFamily = Rounded, fontWeight = FontWeight.Bold, fontSize = 12.sp, lineHeight = 16.sp),
+)

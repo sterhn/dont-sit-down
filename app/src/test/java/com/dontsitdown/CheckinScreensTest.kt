@@ -123,18 +123,23 @@ class CheckinScreensTest {
         }
     }
 
+    /** The check-in screens in their own world, like AppNav puts them. */
+    @androidx.compose.runtime.Composable
+    private fun Notebook(dark: Boolean = false, content: @androidx.compose.runtime.Composable () -> Unit) =
+        Wrap { com.dontsitdown.ui.theme.CheckinWorld(dark = dark) { content() } }
+
     @Test
     fun todayMorningAndEvening() {
         seed()
-        compose.setContent { Wrap { TodayScreen({}, {}, {}, now = { LocalTime.of(8, 30) }) } }
-        waitForText("good morning.")
+        compose.setContent { Notebook { TodayScreen({}, {}, {}, now = { LocalTime.of(8, 30) }) } }
+        waitForText("Good morning")
         shot("20-today-morning")
-        compose.onNodeWithText("evening").performClick()
-        waitForText("good evening.")
+        compose.onNodeWithText("Evening").performClick()
+        waitForText("Good evening")
         shot("21-today-evening")
 
         // Tapping "held" records it, and the character reacts.
-        compose.onAllNodesWithText("held").onFirst().performScrollTo().performClick()
+        compose.onAllNodesWithText("Held").onFirst().performScrollTo().performClick()
         compose.waitForIdle()
         assertEquals("held", app.checkin.current.day(Checkin.key(today)).evening!!.boundaries["22:00 cutoff"])
     }
@@ -145,15 +150,15 @@ class CheckinScreensTest {
         var screen by mutableStateOf("goals")
         compose.setContent {
             Wrap {
-                when (screen) {
+                if (screen == "chores") com.dontsitdown.ui.summary.WeeklySummaryScreen()
+                else com.dontsitdown.ui.theme.CheckinWorld(dark = false) { when (screen) {
                     "goals" -> GoalsScreen({}, {})
                     "goal" -> GoalDetailScreen("new-food", onBack = {})
                     "add" -> AddGoalScreen(onBack = {})
                     "stats" -> StatsScreen({}, {})
-                    "chores" -> StatsScreen({}, {}, startOnChores = true)
                     "journal" -> JournalScreen(onBack = {})
                     else -> WeekStoryScreen(onBack = {})
-                }
+                } }
             }
         }
         shot("22-goals")
@@ -182,21 +187,21 @@ class CheckinScreensTest {
     }
 
     @Test
-    fun lightThemeAndSettings() {
+    fun darkNotebookAndSettings() {
         seed()
         app.settings.update { it.copy(theme = ThemeMode.LIGHT, morningNudge = 9 * 60) }
         var screen by mutableStateOf("today")
         compose.setContent {
             Wrap {
                 when (screen) {
-                    "today" -> TodayScreen({}, {}, {}, now = { LocalTime.of(8, 30) })
-                    "goals" -> GoalsScreen({}, {})
+                    "today" -> com.dontsitdown.ui.theme.CheckinWorld(dark = true) { TodayScreen({}, {}, {}, now = { LocalTime.of(8, 30) }) }
+                    "goals" -> com.dontsitdown.ui.theme.CheckinWorld(dark = true) { GoalsScreen({}, {}) }
                     else -> SettingsScreen()
                 }
             }
         }
-        shot("30-light-today")
-        screen = "goals"; shot("31-light-goals")
+        shot("30-dark-today")
+        screen = "goals"; shot("31-dark-goals")
         screen = "settings"; shot("32-settings")
     }
 
@@ -206,18 +211,18 @@ class CheckinScreensTest {
         val web = """{"boundaries":["no phone in bed"],"goals":[],"log":[],"days":{"${today.minusDays(1)}":{"morning":{"sleep":7,"mood":6,"body":5,"intention":"from the browser"},"evening":null}}}"""
         val cm = app.getSystemService(android.content.ClipboardManager::class.java)
         cm.setPrimaryClip(android.content.ClipData.newPlainText("checkin", web))
-        compose.setContent { Wrap { TodayScreen({}, {}, {}, now = { LocalTime.of(8, 30) }) } }
-        waitForText("coming from the browser app?")
+        compose.setContent { Notebook { TodayScreen({}, {}, {}, now = { LocalTime.of(8, 30) }) } }
+        waitForText("Coming from the browser app?")
         shot("34-import-card")
-        compose.onNodeWithText("paste").performClick()
+        compose.onNodeWithText("Paste").performClick()
         waitForText("import this?")
-        compose.onNodeWithText("import").performClick()
+        compose.onNodeWithText("Import").performClick()
         compose.waitForIdle()
         val d = app.checkin.current
         assertEquals(listOf("no phone in bed"), d.boundaries)
         assertEquals("from the browser", d.day(Checkin.key(today.minusDays(1))).morning!!.intention)
         // Once there's history, the card goes away.
-        compose.waitUntil(5_000) { compose.onAllNodes(hasText("coming from the browser app?")).fetchSemanticsNodes().isEmpty() }
+        compose.waitUntil(5_000) { compose.onAllNodes(hasText("Coming from the browser app?")).fetchSemanticsNodes().isEmpty() }
     }
 
     @Test

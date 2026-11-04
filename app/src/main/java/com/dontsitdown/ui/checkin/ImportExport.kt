@@ -40,18 +40,18 @@ fun CheckinImportButtons(modifier: Modifier = Modifier, onImported: () -> Unit =
         uri ?: return@rememberLauncherForActivityResult
         val parsed = runCatching { context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() } }
             .getOrNull()?.let { CheckinJson.decode(it) }
-        if (parsed == null) Toast.makeText(context, "that file doesn't look like check-in data", Toast.LENGTH_LONG).show()
+        if (parsed == null) Toast.makeText(context, "That file doesn't look like check-in data", Toast.LENGTH_LONG).show()
         else pending = parsed
     }
 
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlineButton("open file", onClick = { picker.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "*/*")) }, modifier = Modifier.weight(1f))
-        OutlineButton("paste", onClick = {
+        OutlineButton("Open file", onClick = { picker.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "*/*")) }, modifier = Modifier.weight(1f))
+        OutlineButton("Paste", onClick = {
             val text = clipboard.getText()?.text
             val parsed = text?.let { CheckinJson.decode(it) }
             when {
-                text.isNullOrBlank() -> Toast.makeText(context, "the clipboard is empty. in the browser app: progress → copy data", Toast.LENGTH_LONG).show()
-                parsed == null -> Toast.makeText(context, "what's on the clipboard isn't check-in data", Toast.LENGTH_LONG).show()
+                text.isNullOrBlank() -> Toast.makeText(context, "The clipboard is empty. In the browser app: Progress → Copy data", Toast.LENGTH_LONG).show()
+                parsed == null -> Toast.makeText(context, "What's on the clipboard isn't check-in data", Toast.LENGTH_LONG).show()
                 else -> pending = parsed
             }
         }, modifier = Modifier.weight(1f))
@@ -62,12 +62,12 @@ fun CheckinImportButtons(modifier: Modifier = Modifier, onImported: () -> Unit =
         val replacing = current.days.isNotEmpty() || current.log.isNotEmpty()
         AlertDialog(
             onDismissRequest = { pending = null },
-            title = { Text("import this?", style = MaterialTheme.typography.titleLarge) },
+            title = { Text("Import this?", style = MaterialTheme.typography.titleLarge) },
             text = {
                 Text(
                     "${d.days.size} days, ${d.goals.size} goals, ${d.log.size} logged, ${d.boundaries.size} boundaries." +
-                        if (replacing) "\n\nthis replaces the check-ins and goals on this phone. your chores and tasks aren't touched."
-                        else "\n\nyour chores and tasks aren't touched.",
+                        if (replacing) "\n\nThis replaces the check-ins and goals on this phone. your chores and tasks aren't touched."
+                        else "\n\nYour chores and tasks aren't touched.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
@@ -75,11 +75,11 @@ fun CheckinImportButtons(modifier: Modifier = Modifier, onImported: () -> Unit =
                 TextButton(onClick = {
                     store.replaceAll(d)
                     pending = null
-                    Toast.makeText(context, "imported. welcome back.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Imported. Welcome back.", Toast.LENGTH_SHORT).show()
                     onImported()
-                }) { Text("import", style = MaterialTheme.typography.labelLarge) }
+                }) { Text("Import", style = MaterialTheme.typography.labelLarge) }
             },
-            dismissButton = { TextButton(onClick = { pending = null }) { Text("cancel", style = MaterialTheme.typography.labelLarge) } },
+            dismissButton = { TextButton(onClick = { pending = null }) { Text("Cancel", style = MaterialTheme.typography.labelLarge) } },
             containerColor = LocalPaper.current.card,
         )
     }

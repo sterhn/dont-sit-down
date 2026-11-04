@@ -80,19 +80,16 @@ import com.dontsitdown.util.TimeUtils
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
-/** Stats: the check-in's progress, and the chores' week, one tap apart. */
+/** Progress: how the check-in has been going. (The chores' week lives on the chain side.) */
 @Composable
-fun StatsScreen(onWeekStory: () -> Unit, onJournal: () -> Unit, startOnChores: Boolean = false) {
-    var chores by rememberSaveable { mutableStateOf(startOnChores) }
+fun StatsScreen(onWeekStory: () -> Unit, onJournal: () -> Unit) {
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp)) {
-            Spacer(Modifier.height(28.dp))
-            Text("stats.", style = MaterialTheme.typography.displayMedium)
-            Spacer(Modifier.height(12.dp))
-            Segmented(listOf(false to "check-in", true to "chores"), chores, { chores = it }, Modifier.fillMaxWidth())
+            Spacer(Modifier.height(24.dp))
+            Text("How it's going", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Progress", style = MaterialTheme.typography.displayMedium)
         }
-        if (chores) WeeklySummaryScreen(embedded = true)
-        else CheckinStats(onWeekStory, onJournal)
+        CheckinStats(onWeekStory, onJournal)
     }
 }
 
@@ -112,7 +109,7 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
         // How you've been, not how consistent you've been.
         val recent = Checkin.window(data, today, 7)
         val lately = Checkin.avg(recent.mapNotNull { it.mood })?.roundToInt()
-        PaperCard(tilt = -0.4f, color = paper.note) {
+        PaperCard(tilt = -0.4f, color = paper.noteBlue) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Polaroid(
                     if (lately != null) Checkin.faceFor(lately) else Face.THINKING,
@@ -121,10 +118,10 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
                 )
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("lately", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(if (lately != null) "mostly ${Checkin.moodWord(lately)}." else "not much to go on yet.", style = MaterialTheme.typography.headlineMedium)
+                    Text("LATELY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(if (lately != null) "Mostly ${Checkin.moodWord(lately)}." else "Not much to go on yet.", style = MaterialTheme.typography.headlineMedium)
                     Text(
-                        if (lately != null) "your mood over the last 7 days" else "your mood shows up here after a few check-ins",
+                        if (lately != null) "Your mood over the last 7 days" else "Your mood shows up here after a few check-ins",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -133,14 +130,14 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
         }
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ReadLink("this week's story", "read it like a diary", Modifier.weight(1f), 0.6f, onWeekStory)
-            ReadLink("journal", if (journalCount > 0) "$journalCount ${if (journalCount == 1) "day" else "days"} written" else "past entries", Modifier.weight(1f), -0.5f, onJournal)
+            ReadLink("This week's story", "Read it like a diary", Modifier.weight(1f), 0.6f, onWeekStory)
+            ReadLink("Journal", if (journalCount > 0) "$journalCount ${if (journalCount == 1) "day" else "days"} written" else "Past entries", Modifier.weight(1f), -0.5f, onJournal)
         }
 
         Spacer(Modifier.height(14.dp))
         PaperCard(tilt = 0.4f) {
             val last7 = (6 downTo 0).map { today.minusDays(it.toLong()) }
-            CardTitle("last 7 days", trailing = { Text("${last7.count { Checkin.dayFilled(data, it) }} of 7", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) })
+            CardTitle("Last 7 days", trailing = { Text("${last7.count { Checkin.dayFilled(data, it) }} of 7", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) })
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 last7.forEach { d ->
@@ -190,28 +187,28 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
 
         Spacer(Modifier.height(14.dp))
         PaperCard(tilt = -0.35f) {
-            CardTitle("averages", trailing = { Text("vs the $range days before", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) })
+            CardTitle("Averages", trailing = { Text("vs the $range days before", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) })
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AvgTile("sleep", days, prev, { it.sleep }, paper.sleep, Modifier.weight(1f))
-                AvgTile("body", days, prev, { it.body }, paper.body, Modifier.weight(1f))
-                AvgTile("mood", days, prev, { it.mood }, paper.mood, Modifier.weight(1f))
+                AvgTile("Sleep", days, prev, { it.sleep }, paper.sleep, Modifier.weight(1f))
+                AvgTile("Body", days, prev, { it.body }, paper.body, Modifier.weight(1f))
+                AvgTile("Mood", days, prev, { it.mood }, paper.mood, Modifier.weight(1f))
             }
             val hasData = days.any { it.sleep != null || it.mood != null || it.body != null }
             Spacer(Modifier.height(14.dp))
             if (hasData) {
                 Chart(days)
                 Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)) {
-                    Legend("sleep", paper.sleep); Legend("body", paper.body); Legend("mood", paper.mood)
+                    Legend("Sleep", paper.sleep); Legend("Body", paper.body); Legend("Mood", paper.mood)
                 }
             } else {
-                Text("your chart appears after a few check-ins.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Your chart appears after a few check-ins.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
         Spacer(Modifier.height(14.dp))
         PaperCard(tilt = 0.4f) {
-            CardTitle("boundaries")
+            CardTitle("Boundaries")
             Spacer(Modifier.height(4.dp))
             data.boundaries.forEach { b -> BarRow(b, holdRate(b)?.let { it / 100f }, holdRate(b)?.let { "$it%" } ?: "–", paper.body) }
             // ones you've stopped tracking but that still show up in this window
@@ -222,7 +219,7 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
 
         Spacer(Modifier.height(14.dp))
         PaperCard(tilt = -0.4f) {
-            CardTitle("mood after sleep")
+            CardTitle("Mood after sleep")
             Spacer(Modifier.height(4.dp))
             val paired = days.filter { it.sleep != null && it.mood != null }
             val split = if (paired.size >= 2) {
@@ -232,10 +229,10 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
                 if (hi.isNotEmpty() && lo.isNotEmpty()) hi.average() to lo.average() else null
             } else null
             if (split != null) {
-                BarRow("after better sleep", (split.first / 10).toFloat(), Checkin.fmt1(split.first), paper.mood)
-                BarRow("after worse sleep", (split.second / 10).toFloat(), Checkin.fmt1(split.second), paper.mood.copy(alpha = 0.45f))
+                BarRow("After better sleep", (split.first / 10).toFloat(), Checkin.fmt1(split.first), paper.mood)
+                BarRow("After worse sleep", (split.second / 10).toFloat(), Checkin.fmt1(split.second), paper.mood.copy(alpha = 0.45f))
             } else {
-                Text("needs a few days with both sleep and mood logged.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Needs a few days with both sleep and mood logged.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Spacer(Modifier.height(32.dp))
@@ -404,16 +401,16 @@ fun JournalScreen(onBack: () -> Unit) {
                 if (dates.isNotEmpty()) Polaroid(Face.FLUSTERED, "don't read this", width = 112.dp) else Polaroid(Face.AWAY, "nothing yet", width = 112.dp)
                 Spacer(Modifier.width(18.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("journal.", style = MaterialTheme.typography.headlineMedium)
+                    Text("Journal", style = MaterialTheme.typography.headlineMedium)
                     Text(
-                        if (dates.isNotEmpty()) "${dates.size} ${if (dates.size == 1) "day" else "days"} in your own words" else "nothing written yet",
+                        if (dates.isNotEmpty()) "${dates.size} ${if (dates.size == 1) "day" else "days"} in your own words" else "Nothing written yet",
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
             if (dates.isEmpty()) {
                 Spacer(Modifier.height(16.dp))
-                PaperCard { Text("intentions, \"what happened\" and \"one honest thing\" show up here once you've written a few.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                PaperCard { Text("Intentions, \"what happened\" and \"one honest thing\" show up here once you've written a few.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             val shown = dates.take(limit)
             shown.forEachIndexed { i, d ->
@@ -425,7 +422,7 @@ fun JournalScreen(onBack: () -> Unit) {
             }
             if (dates.size > shown.size) {
                 Spacer(Modifier.height(14.dp))
-                OutlineButton("show more", onClick = { limit += 14 }, modifier = Modifier.fillMaxWidth())
+                OutlineButton("Show more", onClick = { limit += 14 }, modifier = Modifier.fillMaxWidth())
             }
             Spacer(Modifier.height(32.dp))
         }
@@ -466,14 +463,14 @@ fun WeekStoryScreen(onBack: () -> Unit) {
                 )
                 Spacer(Modifier.width(18.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(when (offset) { 0 -> "this week's story."; -1 -> "last week's story."; else -> "week in review." }, style = MaterialTheme.typography.headlineMedium)
+                    Text(when (offset) { 0 -> "This week's story"; -1 -> "Last week's story"; else -> "Week in review" }, style = MaterialTheme.typography.headlineMedium)
                     Text("${Checkin.dayMonth(start)} – ${Checkin.dayMonth(start.plusDays(6))}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(Modifier.height(16.dp))
             PaperCard(tilt = -0.3f, tape = true) {
                 if (written.isEmpty()) {
-                    Text("nothing written this week${if (offset == 0) " yet" else ""}.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Nothing written this week${if (offset == 0) " yet" else ""}.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else days.forEachIndexed { i, d ->
                     if (i > 0) Box(Modifier.padding(vertical = 14.dp).fillMaxWidth().height(1.dp).background(LocalPaper.current.cardLine.copy(alpha = 0.5f)))
                     if (has.getValue(d)) StoryDay(data, d, Checkin.pretty(d), true, byDay[d].orEmpty(), i)
@@ -482,9 +479,9 @@ fun WeekStoryScreen(onBack: () -> Unit) {
             }
             if (written.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
-                OutlineButton("copy week as markdown", onClick = {
+                OutlineButton("Copy week as markdown", onClick = {
                     clipboard.setText(AnnotatedString(Checkin.weekMarkdown(data, start, today, byDay.mapValues { (_, l) -> l.map { it.taskName to it.minutes } })))
-                    toaster.show("week copied")
+                    toaster.show("Week copied")
                 }, modifier = Modifier.fillMaxWidth())
             }
             Spacer(Modifier.height(32.dp))

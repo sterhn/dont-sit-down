@@ -38,10 +38,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.dontsitdown.ui.theme.Nums
+import com.dontsitdown.ui.theme.HandText
+import com.dontsitdown.ui.theme.LocalPaper
+import com.dontsitdown.ui.theme.LocalWorld
+import com.dontsitdown.ui.theme.World
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 /** The amber slab. One per screen, ideally. */
 @Composable
 fun BigButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    if (LocalWorld.current == World.CHECKIN) return NotebookButton(text, onClick, modifier, enabled)
     Button(
         onClick = onClick,
         enabled = enabled,
@@ -55,6 +63,7 @@ fun BigButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
 
 @Composable
 fun OutlineButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    if (LocalWorld.current == World.CHECKIN) return NotebookGhostButton(text, onClick, modifier)
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.heightIn(min = 52.dp),
@@ -76,6 +85,10 @@ fun QuietAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
 
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
+    if (LocalWorld.current == World.CHECKIN) {
+        Text(text, style = HandText.medium, modifier = modifier.padding(top = 22.dp, bottom = 8.dp, start = 2.dp))
+        return
+    }
     Text(
         text.uppercase(),
         style = MaterialTheme.typography.labelSmall,
@@ -161,6 +174,7 @@ private fun StepButton(label: String, enabled: Boolean, onClick: () -> Unit) {
 /** A row of mutually exclusive options, squared off. */
 @Composable
 fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
+    if (LocalWorld.current == World.CHECKIN) return NotebookToggle(options, selected, onSelect, modifier)
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         options.forEach { (value, label) ->
             val on = value == selected
@@ -202,6 +216,72 @@ fun DayToggles(selected: Set<Int>, onChange: (Set<Int>) -> Unit, modifier: Modif
                 contentAlignment = Alignment.Center,
             ) {
                 Text(l.uppercase(), style = MaterialTheme.typography.labelLarge, color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+// ---------- the notebook's versions: rounded, outlined in ink, a hard little shadow ----------
+
+/** The web app's btn-primary: an ink slab you can press into the page. */
+@Composable
+private fun NotebookButton(text: String, onClick: () -> Unit, modifier: Modifier, enabled: Boolean) {
+    val paper = LocalPaper.current
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .paperShadow(shape = 14.dp, color = paper.shadow)
+            .background(if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, shape)
+            .border(paper.border, paper.cardLine, shape)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary)
+    }
+}
+
+/** btn-ghost: a quiet outlined button. */
+@Composable
+private fun NotebookGhostButton(text: String, onClick: () -> Unit, modifier: Modifier) {
+    val paper = LocalPaper.current
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier
+            .heightIn(min = 48.dp)
+            .border(1.5.dp, paper.segLine, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    }
+}
+
+/** seg-toggle: a pill with an ink pill inside for the chosen option. */
+@Composable
+private fun <T> NotebookToggle(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier) {
+    val paper = LocalPaper.current
+    Row(
+        modifier
+            .paperShadow(shape = 999.dp, color = paper.shadow)
+            .background(paper.card, CircleShape)
+            .border(paper.border, paper.cardLine, CircleShape)
+            .padding(3.dp),
+    ) {
+        options.forEach { (value, label) ->
+            val on = value == selected
+            Box(
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = 36.dp)
+                    .background(if (on) MaterialTheme.colorScheme.primary else Color.Transparent, CircleShape)
+                    .clickable { onSelect(value) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, style = MaterialTheme.typography.labelMedium, color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
