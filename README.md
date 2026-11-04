@@ -21,7 +21,7 @@ Kotlin + Jetpack Compose + Room. Everything stays on the phone: no accounts, no 
 |---|---|
 | **today** | the check-in. morning / evening, yesterday / today (before 5am it opens on last night). autosaves every tap. a strip at the bottom points at tonight's chain and the next goal |
 | **chain** | don't sit down: the chain, the timer, "just one", "not now", and **not home today**. `tasks →` at the top edits the task list |
-| **goals** | small adventures, weekly or monthly, with their own streaks |
+| **goals** | small adventures, weekly or monthly, with a doodle each |
 | **stats** | check-in: how you've been lately, last 7 days, averages, chart, boundary hold rates, mood after sleep, journal, week story. chores: the weekly couch-vs-you summary |
 | **settings** | your tasks, days away, the takeover, check-in reminders, check-in import / export, full backup, theme |
 
@@ -73,10 +73,10 @@ Settings → *the takeover* shows the state of all three and has a **test the ta
 | | |
 |---|---|
 | `checkin/Model.kt` | the check-in data, same JSON shape as the web app; a lenient importer ported from it |
-| `checkin/Checkin.kt` | streaks, goal periods and streaks, faces for moods, the story and markdown |
+| `checkin/Checkin.kt` | days written, goal periods, faces for moods, the story and markdown |
 | `checkin/CheckinStore.kt` | one JSON file, written a moment after each change |
 | `ui/checkin/` | today, goals, stats, journal, week story |
-| `ui/components/Paper.kt`, `Doodles.kt`, `Moments.kt` | polaroid, tape, paper cards, the 1–10 scale, goal doodles, toasts, confetti, the streak stamp |
+| `ui/components/Paper.kt`, `Doodles.kt`, `Moments.kt` | polaroid, tape, paper cards, the 1–10 scale, goal doodles, toasts, confetti |
 | `service/CheckinReminders.kt` | optional quiet morning / evening check-in reminders |
 | `chain/ChainGenerator.kt` | picks 2–4 tasks in ≤ N minutes: overdue first, then stalest, some randomness, never two long tasks, learned times over estimates |
 | `chain/ChainSession.kt` | the ready → dread → active ⇄ between → complete state machine, combo counting, saving results |
@@ -97,6 +97,6 @@ Plain JVM tests cover chain generation, scoring (including away days) and the ch
 import. `ScreensTest` and `CheckinScreensTest` run the real UI under Robolectric, click through a whole chain,
 a check-in and a day away, and save screenshots (`-Dscreenshots.dir=/some/dir` picks where they go).
 
-The character stickers (`res/drawable-nodpi/char_*.webp`) come from the daily-checkin web app. The handwriting
+`data/Backup.kt` writes and restores the full backup. The character stickers (`res/drawable-nodpi/char_*.webp`) come from the daily-checkin web app. The handwriting
 font is [Gaegu](https://fonts.google.com/specimen/Gaegu), subset to latin, under the SIL Open Font License
 (`licenses/Gaegu-OFL.txt`).
