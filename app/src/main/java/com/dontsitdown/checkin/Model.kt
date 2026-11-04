@@ -107,7 +107,9 @@ object CheckinJson {
 
     /** A port of the web app's normalizeImportedState: keep what's recognisable, drop the rest, never throw. */
     fun normalize(raw: JsonElement): CheckinData? {
-        val o = raw as? JsonObject ?: return null
+        val top = raw as? JsonObject ?: return null
+        // A full app backup: take its check-in half.
+        val o = if ((top["kind"] as? JsonPrimitive)?.content == "still-going-backup") top["checkin"] as? JsonObject ?: return null else top
         val rawDays = o["days"] as? JsonObject ?: return null
 
         val boundaries = (o["boundaries"] as? JsonArray)?.mapNotNull { it.str() } ?: CheckinData.DEFAULT_BOUNDARIES

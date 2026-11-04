@@ -69,6 +69,18 @@ interface TaskDao {
     @Query("SELECT * FROM completions WHERE date >= :from AND date < :to ORDER BY date")
     suspend fun completionsBetween(from: Long, to: Long): List<TaskCompletion>
 
+    @Query("SELECT * FROM completions ORDER BY date")
+    suspend fun allCompletions(): List<TaskCompletion>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCompletions(list: List<TaskCompletion>)
+
+    @Query("DELETE FROM tasks")
+    suspend fun clearTasks()
+
+    @Query("DELETE FROM completions")
+    suspend fun clearCompletions()
+
     @Query("SELECT MAX(date) FROM completions")
     suspend fun lastCompletionAt(): Long?
 }

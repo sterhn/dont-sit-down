@@ -123,6 +123,8 @@ fun SettingsScreen(onTasks: () -> Unit = {}) {
 
             CheckinSection(s)
 
+            BackupSection()
+
             SectionLabel("theme")
             Segmented(
                 listOf(ThemeMode.SYSTEM to "system", ThemeMode.DARK to "dark", ThemeMode.LIGHT to "light"),
@@ -308,5 +310,75 @@ private fun NudgeRow(title: String, minuteOfDay: Int, default: Int, onChange: (I
         Row(Modifier.fillMaxWidth().clickable { pickTime(context, minuteOfDay / 60, minuteOfDay % 60) { h, m -> onChange(h * 60 + m) } }.padding(bottom = 8.dp)) {
             Text(TimeUtils.hhmm(minuteOfDay / 60, minuteOfDay % 60), style = Nums.large, color = MaterialTheme.colorScheme.primary)
         }
+    }
+}
+
+/** Everything in one file: for a new phone, a reinstall, or just peace of mind. */
+@Composable
+private fun BackupSection() {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var pending by remember { mutableStateOf<com.dontsitdown.data.Backup?>(null) }
+
+    val saver = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val text = com.dontsitdown.data.BackupJson.encode(com.dontsitdown.data.BackupJson.create(context))
+            runCatching { context.contentResolver.openOutputStream(uri)!!.use { it.write(text.toByteArray()) } }
+                .onSuccess { Toast.makeText(context, "backup saved", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(context, "couldn't write that file", Toast.LENGTH_SHORT).show() }
+        }
+    }
+    val opener = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val text = runCatching { context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() } }.getOrNull()
+        val b = text?.let { com.dontsitdown.data.BackupJson.decode(it) }
+        when {
+            b != null -> pending = b
+            text != null && com.dontsitdown.checkin.CheckinJson.decode(text) != null ->
+                Toast.makeText(context, "that's a check-in file, not a full backup. use the check-in import above.", Toast.LENGTH_LONG).show()
+            else -> Toast.makeText(context, "that file isn't a backup", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    SectionLabel("backup")
+    Text(
+        "everything in one file: tasks, the chore log, settings, days away, and the check-in.",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        OutlineButton("save backup", onClick = { saver.launch("still-going-backup-${TimeUtils.today()}.json") }, modifier = Modifier.weight(1f))
+        OutlineButton("restore", onClick = { opener.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "*/*")) }, modifier = Modifier.weight(1f))
+    }
+
+    pending?.let { b ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pending = null },
+            title = { Text("restore this backup?", style = MaterialTheme.typography.titleLarge) },
+            text = {
+                Text(
+                    b.summary() + (if (b.exportedAt.isNotBlank()) ", saved ${b.exportedAt.take(10)}" else "") +
+                        ".\n\nthis replaces everything on this phone: tasks, history, settings and check-ins.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    pending = null
+                    scope.launch {
+                        com.dontsitdown.data.BackupJson.restore(context, b)
+                        Toast.makeText(context, "restored", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("restore", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { pending = null }) { Text("cancel", style = MaterialTheme.typography.labelLarge) } },
+            containerColor = com.dontsitdown.ui.theme.LocalPaper.current.card,
+        )
     }
 }

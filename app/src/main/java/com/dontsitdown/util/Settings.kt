@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class ThemeMode { SYSTEM, DARK, LIGHT }
 
+@kotlinx.serialization.Serializable
 data class SettingsState(
     val onboarded: Boolean = false,
     val homeHour: Int = 19,

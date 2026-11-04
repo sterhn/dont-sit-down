@@ -6,7 +6,8 @@ One Android app with two jobs:
   "don't sit down. 17 minutes. go."
 - **the daily check-in**: sleep, body and mood in the morning, an intention for the day, and an honest
   close of the day in the evening, with your hoodie-wearing character watching from a taped-in polaroid.
-  Small weekly and monthly goals, a journal, a week story, streaks.
+  Small weekly and monthly goals, a journal, a week story. No streaks, on purpose: the days you wrote
+  something are quietly marked, and stats opens on how you've been feeling, not how consistent you've been.
 
 They share one look (ink and amber, graph paper, the polaroid) and talk to each other: the evening
 check-in shows what chores you got done, the today page points at tonight's chain, and the week story
@@ -21,8 +22,8 @@ Kotlin + Jetpack Compose + Room. Everything stays on the phone: no accounts, no 
 | **today** | the check-in. morning / evening, yesterday / today (before 5am it opens on last night). autosaves every tap. a strip at the bottom points at tonight's chain and the next goal |
 | **chain** | don't sit down: the chain, the timer, "just one", "not now", and **not home today**. `tasks →` at the top edits the task list |
 | **goals** | small adventures, weekly or monthly, with their own streaks |
-| **stats** | check-in: streak stamp, last 7 days, averages, chart, boundary hold rates, mood after sleep, journal, week story. chores: the weekly couch-vs-you summary |
-| **settings** | your tasks, days away, the takeover, check-in reminders, import / export, theme |
+| **stats** | check-in: how you've been lately, last 7 days, averages, chart, boundary hold rates, mood after sleep, journal, week story. chores: the weekly couch-vs-you summary |
+| **settings** | your tasks, days away, the takeover, check-in reminders, check-in import / export, full backup, theme |
 
 ## Not home today
 
@@ -33,9 +34,19 @@ still counts for you. Settings → *not home* shows it and has **i'm home →** 
 
 ## Moving your check-ins over from the web app
 
-1. In the old web app: **progress → export data (JSON)**.
-2. Here: **settings → check-in → import**, pick that file. It replaces the check-ins and goals on the phone
-   (your chores and tasks aren't touched). **export** writes the same format back, so the web app can read it too.
+Your history, goals and boundaries come over in one go. In the web app, open **progress**, then either:
+
+- **copy data**, then in this app tap **paste**, or
+- **export data (JSON)**, then in this app tap **open file** and pick it.
+
+The buttons are on the today page while the check-in is still empty, and always under
+**settings → check-in**. You see what's in the file before anything is replaced, and your chores and tasks
+aren't touched. **export file** / **copy data** here write the same format back, so the web app can read it too.
+
+## Backup
+
+**settings → backup → save backup** writes everything (tasks, the chore log, chain history, settings, days
+away, and the check-in) to one JSON file. **restore** puts it all back, on this phone or a new one.
 
 ## Build & install
 

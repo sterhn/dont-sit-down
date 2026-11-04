@@ -25,6 +25,21 @@ interface ChainResultDao {
     @Insert
     suspend fun insertEvent(event: ReminderEvent)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(results: List<ChainResult>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEvents(events: List<ReminderEvent>)
+
+    @Query("SELECT * FROM reminder_events ORDER BY timestamp")
+    suspend fun allEvents(): List<ReminderEvent>
+
+    @Query("DELETE FROM chain_results")
+    suspend fun clearResults()
+
+    @Query("DELETE FROM reminder_events")
+    suspend fun clearEvents()
+
     @Query("SELECT * FROM reminder_events WHERE timestamp >= :from AND timestamp < :to ORDER BY timestamp")
     suspend fun eventsBetween(from: Long, to: Long): List<ReminderEvent>
 }

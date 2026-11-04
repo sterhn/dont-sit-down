@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
+@kotlinx.serialization.Serializable
 @Entity(tableName = "tasks")
 data class Task(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),

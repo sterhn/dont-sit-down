@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 
 enum class ReminderEventType { FIRED, SNOOZED, STARTED, DISMISSED, NEGOTIATED, REFUSED, SKIPPED }
 
+@kotlinx.serialization.Serializable
 @Entity(tableName = "reminder_events", indices = [Index("timestamp")])
 data class ReminderEvent(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
