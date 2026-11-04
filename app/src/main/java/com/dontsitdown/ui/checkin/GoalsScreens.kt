@@ -122,7 +122,6 @@ fun GoalsScreen(onOpen: (String) -> Unit, onAdd: () -> Unit) {
 private fun GoalRow(data: CheckinData, g: Goal, today: LocalDate, i: Int, onOpen: (String) -> Unit) {
     val n = Checkin.periodCount(data, g, Checkin.periodOf(g, today))
     val met = n >= g.target
-    val streak = Checkin.goalStreak(data, g, today)
     val doodle = Checkin.doodleFor(data, g)
     val shape = RoundedCornerShape(6.dp)
     Row(
@@ -143,8 +142,7 @@ private fun GoalRow(data: CheckinData, g: Goal, today: LocalDate, i: Int, onOpen
         Column(Modifier.weight(1f)) {
             Text(g.title.replaceFirstChar { it.uppercase() }, style = HandText.medium)
             Text(
-                (if (met) "done this ${g.period}" else "$n of ${g.target} · ${Checkin.periodLeft(g, today)}") +
-                    if (streak > 0) " · $streak-${Checkin.unit(g, 1)} streak" else "",
+                if (met) "done this ${g.period}" else "$n of ${g.target} · ${Checkin.periodLeft(g, today)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -157,7 +155,7 @@ private fun GoalRow(data: CheckinData, g: Goal, today: LocalDate, i: Int, onOpen
     }
 }
 
-/** One goal: log it, see what's been logged, keep the streak. */
+/** One goal: log it, and see what's been logged. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GoalDetailScreen(id: String, onBack: () -> Unit) {
@@ -178,8 +176,8 @@ fun GoalDetailScreen(id: String, onBack: () -> Unit) {
     val earlier = all - cur.toSet()
     val n = cur.size
     val met = n >= g.target
-    val streak = Checkin.goalStreak(data, g, today)
     val doodle = Checkin.doodleFor(data, g)
+    val total = all.size
 
     var text by remember { mutableStateOf("") }
     var fieldKey by remember { mutableIntStateOf(0) }
@@ -201,7 +199,7 @@ fun GoalDetailScreen(id: String, onBack: () -> Unit) {
                             if (g.monthly) "monthly" else "weekly",
                             if (g.target > 1) "${g.target} times" else null,
                             if (met) "done this ${g.period}" else Checkin.periodLeft(g, today),
-                            if (streak > 0) "$streak-${Checkin.unit(g, 1)} streak" else "start a streak this ${g.period}",
+                            if (total > 0) "$total logged so far" else null,
                         ).joinToString(" · "),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -234,8 +232,7 @@ fun GoalDetailScreen(id: String, onBack: () -> Unit) {
                         text = ""; tag = null; fieldKey++
                         val completed = Checkin.periodOf(g, date) == p && before < g.target && before + 1 >= g.target
                         if (completed) {
-                            val s = Checkin.goalStreak(store.current, g, today)
-                            toaster.show(if (s > 1) "done — $s ${Checkin.unit(g, s)} in a row" else "done for this ${g.period}")
+                            toaster.show("done for this ${g.period}")
                             toaster.celebrate()
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         } else toaster.show("logged")

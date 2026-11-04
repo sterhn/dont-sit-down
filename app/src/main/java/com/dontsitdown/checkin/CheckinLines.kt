@@ -34,20 +34,6 @@ object CheckinLines {
         "you opened it, might as well fill something in",
         "the form is right there, just saying",
     )
-    val STREAK = mapOf(
-        7 to "a whole week. that's not nothing",
-        14 to "two weeks. you're building something here",
-        30 to "a month. i'm genuinely impressed",
-        100 to "one hundred days. who even are you",
-    )
-
-    fun streakStarted(n: Int): String = when {
-        STREAK[n] != null -> STREAK[n]!!
-        n in Checkin.STREAK_MILESTONES -> "$n days in a row. look at you"
-        n > 1 -> "day $n. still going"
-        else -> "day one. streak started"
-    }
-
     fun morningDone(hour: Int) = if (hour < 6) "you're either up early or haven't slept. either way — noted" else pick(MORNING)
 
     fun eveningDone(hour: Int, yesterday: Boolean) = when {

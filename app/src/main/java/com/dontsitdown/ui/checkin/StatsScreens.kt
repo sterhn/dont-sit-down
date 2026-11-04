@@ -68,7 +68,6 @@ import com.dontsitdown.ui.components.OutlineButton
 import com.dontsitdown.ui.components.PaperCard
 import com.dontsitdown.ui.components.Polaroid
 import com.dontsitdown.ui.components.Segmented
-import com.dontsitdown.ui.components.StreakStamp
 import com.dontsitdown.ui.components.ThinBar
 import com.dontsitdown.ui.components.Tile
 import com.dontsitdown.ui.components.TopBar
@@ -80,15 +79,6 @@ import com.dontsitdown.ui.theme.Mono
 import com.dontsitdown.util.TimeUtils
 import java.time.LocalDate
 import kotlin.math.roundToInt
-
-/** The stamp slams once per day: the first look at stats after checking in. */
-private fun stampSlam(context: android.content.Context, today: LocalDate, filled: Boolean): Boolean {
-    if (!filled) return false
-    val prefs = context.getSharedPreferences("checkin-ui", android.content.Context.MODE_PRIVATE)
-    if (prefs.getString("stamped", null) == today.toString()) return false
-    prefs.edit().putString("stamped", today.toString()).apply()
-    return true
-}
 
 /** Stats: the check-in's progress, and the chores' week, one tap apart. */
 @Composable
@@ -115,24 +105,30 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
     var range by rememberSaveable { mutableIntStateOf(7) }
     val days = Checkin.window(data, today, range)
     val prev = Checkin.window(data, today, range, range)
-    val filledToday = Checkin.dayFilled(data, today)
-    val slam = remember { stampSlam(context, today, filledToday) }
-    val cur = Checkin.currentStreak(data, today)
-    val best = Checkin.bestStreak(data)
     val journalCount = Checkin.journalDates(data).size
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(16.dp))
+        // How you've been, not how consistent you've been.
+        val recent = Checkin.window(data, today, 7)
+        val lately = Checkin.avg(recent.mapNotNull { it.mood })?.roundToInt()
         PaperCard(tilt = -0.4f, color = paper.note) {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                StreakStamp(cur, lit = filledToday, slam = slam)
-                Text("in a row", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    (if (filledToday) "today's in. " else "check in today to keep it growing. ") + "your record is $best.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Polaroid(
+                    if (lately != null) Checkin.faceFor(lately) else Face.THINKING,
+                    if (lately != null) Checkin.moodWord(lately) else "hmm",
+                    width = 104.dp,
                 )
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("lately", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(if (lately != null) "mostly ${Checkin.moodWord(lately)}." else "not much to go on yet.", style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        if (lately != null) "your mood over the last 7 days" else "your mood shows up here after a few check-ins",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         Spacer(Modifier.height(14.dp))
@@ -184,7 +180,7 @@ private fun CheckinStats(onWeekStory: () -> Unit, onJournal: () -> Unit) {
         val first = days.first().date
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Tile("${days.count { Checkin.dayFilled(data, it.date) }}/$range", "days checked in", Modifier.weight(1f))
-            Tile("$best", "longest streak", Modifier.weight(1f))
+            Tile("${days.count { d -> Checkin.storyLines(data, d.date, false).isNotEmpty() }}", "days written", Modifier.weight(1f))
         }
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -124,21 +124,7 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
         if (reaction?.id == r.id) reaction = null
     }
 
-    // A streak toast the moment today first gets something in it.
     val filledToday = Checkin.dayFilled(data, today)
-    var wasFilled by remember { mutableStateOf(filledToday) }
-    LaunchedEffect(filledToday) {
-        if (filledToday && !wasFilled) {
-            val n = Checkin.currentStreak(data, today)
-            toaster.show(CheckinLines.streakStarted(n))
-            if (n in Checkin.STREAK_MILESTONES) {
-                react(if (n >= 100) Face.SURPRISED else Face.GREAT, 2600)
-                toaster.celebrate()
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            }
-        }
-        wasFilled = filledToday
-    }
 
     val morning = data.day(Checkin.key(today)).morning
     val eveningRec = data.day(Checkin.key(eveningDate)).evening
@@ -208,14 +194,9 @@ fun TodayScreen(onOpenChain: () -> Unit, onOpenGoal: (String) -> Unit, onOpenGoa
                         letters = (0..6).map { Checkin.narrow(start.plusDays(it.toLong())) },
                     )
                     Spacer(Modifier.height(5.dp))
-                    val n = (0..6).count { Checkin.dayFilled(data, start.plusDays(it.toLong())) }
-                    val cur = Checkin.currentStreak(data, today)
+                    // A record, not a scoreboard: no counting, no streaks.
                     Text(
-                        when {
-                            filledToday -> "$n of 7 this week"
-                            cur > 0 -> "check in to keep your $cur-day streak"
-                            else -> "check in to start a streak"
-                        },
+                        if (filledToday) "today's written down" else "whenever you're ready",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

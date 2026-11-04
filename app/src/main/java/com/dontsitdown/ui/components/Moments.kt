@@ -138,39 +138,3 @@ private fun Confetti(trigger: Int) {
         }
     }
 }
-
-/** The streak as a rubber stamp. Faded until today is in; slams down once when [slam] is set. */
-@Composable
-fun StreakStamp(days: Int, lit: Boolean, slam: Boolean, modifier: Modifier = Modifier, size: Dp = 120.dp) {
-    val ink = LocalPaper.current.stamp
-    val measurer = rememberTextMeasurer()
-    val s = remember { Animatable(if (slam) 2.4f else 1f) }
-    val a = remember { Animatable(if (slam) 0f else 1f) }
-    LaunchedEffect(slam) {
-        if (!slam) return@LaunchedEffect
-        delay(180)
-        a.animateTo(1f, tween(120, easing = LinearEasing))
-        s.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 500f))
-    }
-    Canvas(
-        modifier
-            .size(size)
-            .graphicsLayer {
-                scaleX = s.value; scaleY = s.value
-                rotationZ = (s.value - 1f) * -20f
-                alpha = a.value * if (lit) 1f else 0.38f
-            },
-    ) {
-        val k = this.size.minDimension / 48f
-        val color = if (lit) ink else Color.Gray
-        rotate(-10f) {
-            drawCircle(color, 21f * k, style = Stroke(2.4f * k))
-            drawCircle(color, 16.5f * k, style = Stroke(1.1f * k, pathEffect = PathEffect.dashPathEffect(floatArrayOf(2f * k, 2.6f * k))))
-            val numSize = if (days > 99) 12f else if (days > 9) 15f else 17f
-            val num = measurer.measure(days.toString(), TextStyle(fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = (numSize * k).toSp(), color = color))
-            drawText(num, topLeft = Offset(center.x - num.size.width / 2f, center.y - num.size.height * 0.62f))
-            val lbl = measurer.measure(if (days == 1) "DAY" else "DAYS", TextStyle(fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = (5.4f * k).toSp(), letterSpacing = (1f * k).toSp(), color = color))
-            drawText(lbl, topLeft = Offset(center.x - lbl.size.width / 2f, center.y + 6.5f * k - lbl.size.height / 2f))
-        }
-    }
-}

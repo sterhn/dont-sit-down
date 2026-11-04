@@ -18,11 +18,10 @@ data class DayNumbers(val date: LocalDate, val sleep: Int?, val mood: Int?, val 
 
 /**
  * Everything the check-in knows how to work out, as plain functions over [CheckinData].
- * Straight ports of the web app's streak, goal and story logic, so both agree on every number.
+ * Ports of the web app's goal and story logic, so both agree on every number. No streaks: on purpose.
  */
 object Checkin {
     val MOOD_WORDS = listOf("drained", "rough", "low", "meh", "okay", "fine", "good", "bright", "great", "radiant")
-    val STREAK_MILESTONES = setOf(3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365)
 
     fun key(d: LocalDate): String = d.toString()
     fun date(key: String): LocalDate = LocalDate.parse(key)
@@ -30,7 +29,7 @@ object Checkin {
 
     fun moodWord(v: Int?): String = if (v == null) "" else MOOD_WORDS[(v - 1).coerceIn(0, 9)]
 
-    // ---- filled / streaks ----
+    // ---- filled ----
 
     fun morningFilled(m: Morning?): Boolean =
         m != null && (m.sleep != null || m.mood != null || m.body != null || m.intention.isNotBlank())
@@ -39,34 +38,10 @@ object Checkin {
         e != null && (e.mood != null || e.body != null || e.gym != null || e.happened.isNotBlank() ||
             e.honest.isNotBlank() || e.spent.isNotBlank() || e.boundaries.values.any { it != null })
 
-    /** A day counts toward the streak if either check-in has something in it. */
+    /** A day is written down if either check-in has something in it. */
     fun dayFilled(data: CheckinData, d: LocalDate): Boolean {
         val day = data.days[key(d)] ?: return false
         return morningFilled(day.morning) || eveningFilled(day.evening)
-    }
-
-    /** Today not done yet doesn't break the streak; it's still alive until tomorrow. */
-    fun currentStreak(data: CheckinData, today: LocalDate): Int {
-        var d = if (dayFilled(data, today)) today else today.minusDays(1)
-        var n = 0
-        while (dayFilled(data, d)) {
-            n++
-            d = d.minusDays(1)
-        }
-        return n
-    }
-
-    fun bestStreak(data: CheckinData): Int {
-        val filled = data.days.keys.mapNotNull { runCatching { date(it) }.getOrNull() }.filter { dayFilled(data, it) }.sorted()
-        var best = 0
-        var run = 0
-        var prev: LocalDate? = null
-        for (d in filled) {
-            run = if (prev != null && prev.plusDays(1) == d) run + 1 else 1
-            best = maxOf(best, run)
-            prev = d
-        }
-        return best
     }
 
     fun weekStart(d: LocalDate): LocalDate = d.minusDays((d.dayOfWeek.value - 1).toLong())
@@ -96,26 +71,10 @@ object Checkin {
     /** The period a date falls in: "yyyy-MM" for monthly goals, the monday's key for weekly ones. */
     fun periodOf(goal: Goal, d: LocalDate): String = if (goal.monthly) key(d).take(7) else key(weekStart(d))
 
-    private fun prevPeriod(goal: Goal, p: String): String =
-        if (goal.monthly) LocalDate.parse("$p-01").minusMonths(1).toString().take(7) else date(p).minusDays(7).toString()
-
     fun entries(data: CheckinData, goal: Goal) = data.log.filter { it.goal == goal.id }
 
     fun periodCount(data: CheckinData, goal: Goal, period: String) =
         entries(data, goal).count { runCatching { periodOf(goal, date(it.date)) }.getOrNull() == period }
-
-    /** Consecutive weeks/months with the goal met; an unfinished current period doesn't break it. */
-    fun goalStreak(data: CheckinData, goal: Goal, today: LocalDate): Int {
-        val counts = entries(data, goal).mapNotNull { runCatching { periodOf(goal, date(it.date)) }.getOrNull() }.groupingBy { it }.eachCount()
-        var p = periodOf(goal, today)
-        if ((counts[p] ?: 0) < goal.target) p = prevPeriod(goal, p)
-        var n = 0
-        while ((counts[p] ?: 0) >= goal.target) {
-            n++
-            p = prevPeriod(goal, p)
-        }
-        return n
-    }
 
     fun daysLeft(goal: Goal, today: LocalDate): Int =
         if (goal.monthly) today.lengthOfMonth() - today.dayOfMonth + 1 else 8 - today.dayOfWeek.value

@@ -10,18 +10,6 @@ import java.time.LocalDate
 class CheckinTest {
     private val today = LocalDate.of(2026, 11, 4) // a wednesday
 
-    private fun filled(vararg daysAgo: Int) = CheckinData(
-        days = daysAgo.associate { today.minusDays(it.toLong()).toString() to Day(morning = Morning(mood = 6)) },
-    )
-
-    @Test
-    fun streakIgnoresAnUnfinishedToday() {
-        assertEquals(3, Checkin.currentStreak(filled(1, 2, 3, 5), today))
-        assertEquals(4, Checkin.currentStreak(filled(0, 1, 2, 3, 5), today))
-        assertEquals(0, Checkin.currentStreak(filled(2, 3), today))
-        assertEquals(4, Checkin.bestStreak(filled(0, 1, 2, 3, 5)))
-    }
-
     @Test
     fun blankCheckinDoesNotCount() {
         val d = CheckinData(days = mapOf(today.toString() to Day(morning = Morning(intention = "  "), evening = Evening(boundaries = mapOf("x" to null)))))
@@ -31,25 +19,20 @@ class CheckinTest {
     }
 
     @Test
-    fun weeklyGoalStreakCountsWholeWeeks() {
+    fun goalPeriods() {
         val g = Goal("g", "Go somewhere new", "week", 1, "place")
         val log = listOf(
-            LogEntry("1", "g", "2026-10-21", "park"), // week of oct 19
-            LogEntry("2", "g", "2026-10-28", "museum"), // week of oct 26
+            LogEntry("1", "g", "2026-11-02", "park"), // this week (mon nov 2)
+            LogEntry("2", "g", "2026-11-01", "museum"), // last week (sunday)
         )
         val d = CheckinData(goals = listOf(g), log = log)
-        // This week (nov 2) isn't done yet, but that doesn't break it.
-        assertEquals(2, Checkin.goalStreak(d, g, today))
-        assertEquals(0, Checkin.periodCount(d, g, Checkin.periodOf(g, today)))
+        assertEquals(1, Checkin.periodCount(d, g, Checkin.periodOf(g, today)))
+        assertTrue(Checkin.pendingGoals(d, today).isEmpty())
         assertEquals("5 days left", Checkin.periodLeft(g, today))
         assertEquals("last day", Checkin.periodLeft(g, LocalDate.of(2026, 11, 8)))
-    }
-
-    @Test
-    fun monthlyGoalStreakCrossesYears() {
-        val g = Goal("b", "Read a book", "month", 1, "book")
-        val d = CheckinData(goals = listOf(g), log = listOf(LogEntry("1", "b", "2025-12-30", "x"), LogEntry("2", "b", "2026-01-02", "y")))
-        assertEquals(2, Checkin.goalStreak(d, g, LocalDate.of(2026, 2, 10)))
+        val book = Goal("b", "Read a book", "month", 1, "book")
+        assertEquals("2026-11", Checkin.periodOf(book, today))
+        assertEquals("27 days left", Checkin.periodLeft(book, today))
     }
 
     @Test
